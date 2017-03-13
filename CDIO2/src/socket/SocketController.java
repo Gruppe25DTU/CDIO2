@@ -29,11 +29,15 @@ public class SocketController implements ISocketController {
 	}
 
 	@Override
-	public void sendMessage(SocketOutMessage message) {
+	public void sendMessage(SocketOutMessage message) throws CONNException {
 		if (outStream!=null){
-			//TODO send something over the socket! 
+			try {
+				outStream.writeBytes(message.getMessage());
+			} catch (IOException e) {
+				throw new CONNException("Problem with connection");
+			}
 		} else {
-			//TODO maybe tell someone that connection is closed?
+			throw new CONNException("Connections is closed");
 		}
 	}
 
@@ -62,6 +66,7 @@ public class SocketController implements ISocketController {
 			//TODO How do you handle simultaneous input and output on socket?
 			//TODO this only allows for one open connection - how would you handle multiple connections?
 			while (true){
+				System.out.println("Server is connected: "+activeSocket.isConnected());
 				inLine = inStream.readLine();
 				System.out.println(inLine);
 				if (inLine==null) break;
@@ -70,40 +75,66 @@ public class SocketController implements ISocketController {
 					//TODO implement logic for RM command
 					break;
 				case "D":// Display a message in the primary display
-					//TODO Refactor to make sure that faulty messages doesn't break the system
 					notifyObservers(new SocketInMessage(SocketMessageType.D, inLine.split(" ")[1])); 			
 					break;
 				case "DW": //Clear primary display
-					//TODO implement
+					notifyObservers(new SocketInMessage(SocketMessageType.DW,""));
 					break;
 				case "P111": //Show something in secondary display
-					//TODO implement
+					String msg = null;
+					if(inLine.indexOf('\"')==5)
+					{
+						for(int i = 6; i<inLine.length();i++)
+						{
+							if(inLine.charAt(i)=='\"')
+							{
+								msg = inLine.substring(5, i);
+								break;
+							}
+						}
+						if(msg == null)
+							outStream.writeBytes("ES"+'\r'+'\n');
+						else
+							notifyObservers(new SocketInMessage(SocketMessageType.P111,msg));
+					}
+					
 					break;
 				case "T": // Tare the weight
-					//TODO implement
+					notifyObservers(new SocketInMessage(SocketMessageType.T,""));
 					break;
 				case "S": // Request the current load
-					//TODO implement
+					notifyObservers(new SocketInMessage(SocketMessageType.S,""));
 					break;
 				case "K":
-					if (inLine.split(" ").length>1){
-						notifyObservers(new SocketInMessage(SocketMessageType.K, inLine.split(" ")[1]));
-					}
+					notifyObservers(new SocketInMessage(SocketMessageType.K, inLine.split(" ")[1]));
 					break;
 				case "B": // Set the load
-					//TODO implement
+					notifyObservers(new SocketInMessage(SocketMessageType.B,inLine.split(" ")[1]));
 					break;
 				case "Q": // Quit
-					//TODO implement
+					notifyObservers(new SocketInMessage(SocketMessageType.Q,""));
 					break;
 				default: //Something went wrong?
-					//TODO implement
+					outStream.writeBytes("ES"+'\r'+'\n');
 					break;
+
 				}
 			}
-		} catch (IOException e) {
+		}
+		catch (ArrayIndexOutOfBoundsException e)
+		{
+			try {
+				outStream.writeBytes("ES"+'\r'+'\n');
+			} catch (IOException e1) {
+
+			}
+		}
+		catch (IOException e) {
 			//TODO maybe notify mainController?
 			e.printStackTrace();
+		} catch(Exception e)
+		{
+
 		}
 	}
 
