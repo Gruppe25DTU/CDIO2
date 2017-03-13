@@ -37,7 +37,7 @@ public class SocketController implements ISocketController {
 				throw new CONNException("Problem with connection");
 			}
 		} else {
-			throw new CONNException("Connections is closed");
+			throw new CONNException("Connection is closed");
 		}
 	}
 
@@ -48,7 +48,9 @@ public class SocketController implements ISocketController {
 			while (true){
 				waitForConnections(listeningSocket); 	
 			}		
-		} catch (IOException e1) {
+		} 
+		catch (IOException e1) 
+		{
 			// TODO Maybe notify MainController?
 			e1.printStackTrace();
 		} 
@@ -66,38 +68,23 @@ public class SocketController implements ISocketController {
 			//TODO How do you handle simultaneous input and output on socket?
 			//TODO this only allows for one open connection - how would you handle multiple connections?
 			while (true){
-				System.out.println("Server is connected: "+activeSocket.isConnected());
 				inLine = inStream.readLine();
 				System.out.println(inLine);
-				if (inLine==null) break;
+				if (inLine==null) continue;
 				switch (inLine.split(" ")[0]) {
 				case "RM20": // Display a message in the secondary display and wait for response
-					//TODO implement logic for RM command
+					String rMsg = inLine.substring(5,inLine.length());
+					notifyObservers(new SocketInMessage(SocketMessageType.RM208,rMsg));
 					break;
 				case "D":// Display a message in the primary display
-					notifyObservers(new SocketInMessage(SocketMessageType.D, inLine.split(" ")[1])); 			
+					notifyObservers(new SocketInMessage(SocketMessageType.D, inLine.substring(3,inLine.length()))); 			
 					break;
 				case "DW": //Clear primary display
 					notifyObservers(new SocketInMessage(SocketMessageType.DW,""));
 					break;
 				case "P111": //Show something in secondary display
-					String msg = null;
-					if(inLine.indexOf('\"')==5)
-					{
-						for(int i = 6; i<inLine.length();i++)
-						{
-							if(inLine.charAt(i)=='\"')
-							{
-								msg = inLine.substring(5, i);
-								break;
-							}
-						}
-						if(msg == null)
-							outStream.writeBytes("ES"+'\r'+'\n');
-						else
-							notifyObservers(new SocketInMessage(SocketMessageType.P111,msg));
-					}
-					
+					String pMsg = inLine.substring(5,inLine.length());
+					notifyObservers(new SocketInMessage(SocketMessageType.P111,pMsg));
 					break;
 				case "T": // Tare the weight
 					notifyObservers(new SocketInMessage(SocketMessageType.T,""));
@@ -121,6 +108,8 @@ public class SocketController implements ISocketController {
 				}
 			}
 		}
+		
+		
 		catch (ArrayIndexOutOfBoundsException e)
 		{
 			try {

@@ -16,6 +16,7 @@ public class SocketTest {
 	{
 		ISocketController socketHandler = new SocketController();
 		Thread ts = new Thread(socketHandler);
+		System.out.println(ts.getName()+" "+Thread.currentThread().getName()+" "+Thread.activeCount());
 		ts.start();
 		
 		try {
