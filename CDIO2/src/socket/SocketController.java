@@ -17,6 +17,26 @@ public class SocketController implements ISocketController {
 	private BufferedReader inStream;
 	private DataOutputStream outStream;
 
+	class EchoThread extends Thread{
+		Socket socket;
+		public EchoThread(Socket socket) {
+			this.socket = socket;
+
+		}
+
+		@Override
+		public void run() {
+			try {
+				inStream = new BufferedReader(new InputStreamReader(socket.getInputStream()));
+				outStream = new DataOutputStream(socket.getOutputStream());
+				String inLine = inStream.readLine();
+				handleConnections(inLine);
+			}
+			catch (Exception e) {
+
+			}
+		}
+	}
 
 	@Override
 	public void registerObserver(ISocketObserver observer) {
@@ -61,15 +81,35 @@ public class SocketController implements ISocketController {
 	private void waitForConnections(ServerSocket listeningSocket) {
 		try {
 			Socket activeSocket = listeningSocket.accept(); //Blocking call
-			inStream = new BufferedReader(new InputStreamReader(activeSocket.getInputStream()));
-			outStream = new DataOutputStream(activeSocket.getOutputStream());
-			String inLine;
+			new Thread(new EchoThread(activeSocket)).run();
 			//.readLine is a blocking call 
 			//TODO How do you handle simultaneous input and output on socket?
 			//TODO this only allows for one open connection - how would you handle multiple connections?
+
+		}
+
+
+		catch (ArrayIndexOutOfBoundsException e)
+		{
+			try {
+				outStream.writeBytes("ES"+'\r'+'\n');
+			} catch (IOException e1) {
+
+			}
+		}
+		catch (IOException e) {
+			//TODO maybe notify mainController?
+			e.printStackTrace();
+		} catch(Exception e)
+		{
+
+		}
+	}
+
+
+	private void handleConnections(String inLine) {
+		try {
 			while (true){
-				inLine = inStream.readLine();
-				System.out.println(inLine);
 				if (inLine==null) continue;
 				switch (inLine.split(" ")[0]) {
 				case "RM20": // Display a message in the secondary display and wait for response
@@ -102,30 +142,21 @@ public class SocketController implements ISocketController {
 					notifyObservers(new SocketInMessage(SocketMessageType.Q,""));
 					break;
 				default: //Something went wrong?
+
 					outStream.writeBytes("ES"+'\r'+'\n');
+
 					break;
 
 				}
 			}
 		}
-		
-		
-		catch (ArrayIndexOutOfBoundsException e)
-		{
-			try {
-				outStream.writeBytes("ES"+'\r'+'\n');
-			} catch (IOException e1) {
-
-			}
-		}
 		catch (IOException e) {
-			//TODO maybe notify mainController?
+			// TODO Auto-generated catch block
 			e.printStackTrace();
-		} catch(Exception e)
-		{
-
 		}
+
 	}
+
 
 	private void notifyObservers(SocketInMessage message) {
 		for (ISocketObserver socketObserver : observers) {
