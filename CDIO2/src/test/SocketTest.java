@@ -7,17 +7,23 @@ import java.io.InputStreamReader;
 import java.net.Socket;
 import java.util.Scanner;
 
+import controller.IMainController;
+import controller.MainController;
 import socket.ISocketController;
 import socket.SocketController;
+import weight.IWeightInterfaceController;
+import weight.gui.WeightInterfaceControllerGUI;
 
 public class SocketTest {
 
 	public static void main(String[] args)
 	{
 		ISocketController socketHandler = new SocketController();
-		Thread ts = new Thread(socketHandler);
-		System.out.println(ts.getName()+" "+Thread.currentThread().getName()+" "+Thread.activeCount());
-		ts.start();
+		IWeightInterfaceController weightController = new WeightInterfaceControllerGUI();
+		//Injecting socket and uiController into mainController - Replace with improved versions...
+		IMainController mainCtrl = new MainController(socketHandler, weightController);
+		//.init and .start could be merged
+		mainCtrl.start();
 		
 		try {
 			Socket clientSock = new Socket("127.0.0.1",8000);

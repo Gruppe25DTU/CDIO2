@@ -1,5 +1,6 @@
 package controller;
 
+import socket.CONNException;
 import socket.ISocketController;
 import socket.ISocketObserver;
 import socket.SocketInMessage;
@@ -34,7 +35,9 @@ public class MainController implements IMainController, ISocketObserver, IWeight
 		if (socketHandler!=null && weightController!=null){
 			//Makes this controller interested in messages from the socket
 			socketHandler.registerObserver(this);
+			weightController.registerObserver(this);
 			//Starts socketHandler in own thread
+			new Thread(weightController).start();
 			new Thread(socketHandler).start();
 			//TODO set up weightController - Look above for inspiration (Keep it simple ;))
 
@@ -112,7 +115,12 @@ public class MainController implements IMainController, ISocketObserver, IWeight
 			break;
 		case SEND:
 			if (keyState.equals(KeyState.K4) || keyState.equals(KeyState.K3) ){
-				socketHandler.sendMessage(new SocketOutMessage("K A 3"));
+				try {
+					socketHandler.sendMessage(new SocketOutMessage("K A 3"));
+				} catch (CONNException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
 			}
 			break;
 		}

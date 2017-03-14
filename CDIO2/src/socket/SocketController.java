@@ -11,7 +11,7 @@ import java.util.Set;
 
 import socket.SocketInMessage.SocketMessageType;
 
-public class SocketController implements ISocketController {
+public class SocketController implements ISocketController, ISocketObserver {
 	Set<ISocketObserver> observers = new HashSet<ISocketObserver>();
 	//TODO Maybe add some way to keep track of multiple connections?
 	private BufferedReader inStream;
@@ -61,52 +61,13 @@ public class SocketController implements ISocketController {
 	private void waitForConnections(ServerSocket listeningSocket) {
 		try {
 			Socket activeSocket = listeningSocket.accept(); //Blocking call
-			inStream = new BufferedReader(new InputStreamReader(activeSocket.getInputStream()));
-			outStream = new DataOutputStream(activeSocket.getOutputStream());
+			ClientSocket newConn = new ClientSocket(activeSocket);
+			newConn.registerObserver(this);
+			new Thread(newConn).start();
 			String inLine;
 			//.readLine is a blocking call 
 			//TODO How do you handle simultaneous input and output on socket?
 			//TODO this only allows for one open connection - how would you handle multiple connections?
-			while (true){
-				inLine = inStream.readLine();
-				System.out.println(inLine);
-				if (inLine==null) continue;
-				switch (inLine.split(" ")[0]) {
-				case "RM20": // Display a message in the secondary display and wait for response
-					String rMsg = inLine.substring(5,inLine.length());
-					notifyObservers(new SocketInMessage(SocketMessageType.RM208,rMsg));
-					break;
-				case "D":// Display a message in the primary display
-					notifyObservers(new SocketInMessage(SocketMessageType.D, inLine.substring(3,inLine.length()))); 			
-					break;
-				case "DW": //Clear primary display
-					notifyObservers(new SocketInMessage(SocketMessageType.DW,""));
-					break;
-				case "P111": //Show something in secondary display
-					String pMsg = inLine.substring(5,inLine.length());
-					notifyObservers(new SocketInMessage(SocketMessageType.P111,pMsg));
-					break;
-				case "T": // Tare the weight
-					notifyObservers(new SocketInMessage(SocketMessageType.T,""));
-					break;
-				case "S": // Request the current load
-					notifyObservers(new SocketInMessage(SocketMessageType.S,""));
-					break;
-				case "K":
-					notifyObservers(new SocketInMessage(SocketMessageType.K, inLine.split(" ")[1]));
-					break;
-				case "B": // Set the load
-					notifyObservers(new SocketInMessage(SocketMessageType.B,inLine.split(" ")[1]));
-					break;
-				case "Q": // Quit
-					notifyObservers(new SocketInMessage(SocketMessageType.Q,""));
-					break;
-				default: //Something went wrong?
-					outStream.writeBytes("ES"+'\r'+'\n');
-					break;
-
-				}
-			}
 		}
 		
 		
@@ -131,6 +92,11 @@ public class SocketController implements ISocketController {
 		for (ISocketObserver socketObserver : observers) {
 			socketObserver.notify(message);
 		}
+	}
+
+	@Override
+	synchronized public void notify(SocketInMessage message) {
+		notifyObservers(message);
 	}
 
 }
