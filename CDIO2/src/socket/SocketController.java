@@ -64,27 +64,14 @@ public class SocketController implements ISocketController, ISocketObserver {
 			ClientSocket newConn = new ClientSocket(activeSocket);
 			newConn.registerObserver(this);
 			new Thread(newConn).start();
-			String inLine;
 			//.readLine is a blocking call 
 			//TODO How do you handle simultaneous input and output on socket?
 			//TODO this only allows for one open connection - how would you handle multiple connections?
 		}
-		
-		
-		catch (ArrayIndexOutOfBoundsException e)
-		{
-			try {
-				outStream.writeBytes("ES"+'\r'+'\n');
-			} catch (IOException e1) {
 
-			}
-		}
 		catch (IOException e) {
 			//TODO maybe notify mainController?
 			e.printStackTrace();
-		} catch(Exception e)
-		{
-
 		}
 	}
 

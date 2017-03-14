@@ -16,7 +16,8 @@ public class ClientSocket implements ISocketController {
 	private Socket inConn;
 	private DataOutputStream outStream;
 	private BufferedReader inStream;
-	boolean active;
+	private boolean active;
+	private boolean running;
 
 	public ClientSocket(Socket inConn) {
 		this.inConn = inConn;
@@ -25,6 +26,7 @@ public class ClientSocket implements ISocketController {
 			outStream = new DataOutputStream(inConn.getOutputStream());
 			inStream = new BufferedReader(new InputStreamReader(inConn.getInputStream()));
 			active = false;
+			running = true;
 		} 
 		catch (IOException e) 
 		{
@@ -36,22 +38,33 @@ public class ClientSocket implements ISocketController {
 	public void run() 
 	{
 
-		while(active)
+		while(running)
 		{
-			String inLine;
+			while(active)
+			{
+				String inLine;
+				try 
+				{
+					inLine = inStream.readLine();
+					System.out.println(inLine);
+					if (inLine==null) continue;
+					handleInput(inLine);
+				} 
+				catch (IOException e) 
+				{
+					e.printStackTrace();
+				}
+				
+			}
 			try 
 			{
-				inLine = inStream.readLine();
-				System.out.println(inLine);
-				if (inLine==null) continue;
-				handleInput(inLine);
+				Thread.currentThread().sleep(100);
 			} 
-			catch (IOException e) 
-			{
+			catch (InterruptedException e) {
 				e.printStackTrace();
 			}
-			
 		}
+		
 
 	}
 
@@ -89,6 +102,7 @@ public class ClientSocket implements ISocketController {
 				break;
 			case "Q": // Quit
 				notifyObservers(new SocketInMessage(SocketMessageType.Q,""));
+				running = false;
 				break;
 			default: //Something went wrong?
 				outStream.writeBytes("ES"+'\r'+'\n');
@@ -135,6 +149,22 @@ public class ClientSocket implements ISocketController {
 			ob.notify(message);
 		}
 
+	}
+
+	public Socket getInConn() {
+		return inConn;
+	}
+
+	public void setInConn(Socket inConn) {
+		this.inConn = inConn;
+	}
+
+	public boolean isActive() {
+		return active;
+	}
+
+	public void setActive(boolean active) {
+		this.active = active;
 	}
 
 }
