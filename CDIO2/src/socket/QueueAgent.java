@@ -18,14 +18,21 @@ public class QueueAgent extends Thread {
 		{
 			try 
 			{
-				Thread.currentThread().sleep(300);
+				Thread.currentThread().sleep(1000);
 			} 
 			catch (InterruptedException e) 
 			{
-				e.printStackTrace();
+				
 			}
 			if(sCtrl.getActiveSocket()==null || !sCtrl.getActiveSocket().isActive())
+			{
+				if(sCtrl.getActiveSocket()!=null)
+					sCtrl.getActiveSocket().unRegisterObserver(sCtrl);
 				sCtrl.setActiveSocket(queue.deQueue());
+			}
+				
 		}
+		
+		
 	}
 }

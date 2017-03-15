@@ -50,7 +50,7 @@ public class SocketQueue {
 		return null;
 	}
 
-	public void remove(Socket socket)
+	public void remove(ClientSocket socket)
 	{
 		if(!isEmpty())
 		{
@@ -112,7 +112,7 @@ public class SocketQueue {
 		String result = "";
 		while(current!=null)
 		{
-			result += current.socket.toString()+'\r';
+			result += current.socket.hashCode()+" "+current.socket.toString()+'\r';
 			current = current.next;
 		}
 		return result;

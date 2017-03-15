@@ -12,6 +12,7 @@ public class SocketController implements ISocketController, ISocketObserver {
 	private Set<ISocketObserver> observers = new HashSet<ISocketObserver>();
 	private SocketQueue queue;
 	private ClientSocket activeSocket;
+	private Thread qA;
 
 	@Override
 	public void registerObserver(ISocketObserver observer) {
@@ -26,7 +27,8 @@ public class SocketController implements ISocketController, ISocketObserver {
 	public SocketController()
 	{
 		queue = SocketQueue.getInstance();
-		new QueueAgent(this).start();
+		qA = new QueueAgent(this);
+		qA.start();
 	}
 
 	@Override
@@ -81,6 +83,7 @@ public class SocketController implements ISocketController, ISocketObserver {
 
 	@Override
 	synchronized public void notify(SocketInMessage message) {
+		qA.interrupt();
 		notifyObservers(message);
 	}
 

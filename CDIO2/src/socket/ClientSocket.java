@@ -62,6 +62,8 @@ public class ClientSocket implements ISocketController {
 				e.printStackTrace();
 			}
 		}
+		SocketQueue.getInstance().remove(this);
+		
 		
 
 	}
@@ -111,6 +113,15 @@ public class ClientSocket implements ISocketController {
 		catch(IOException e)
 		{
 			
+		}
+		catch(ArrayIndexOutOfBoundsException e)
+		{
+			try {
+				outStream.writeBytes("ES"+'\r'+'\n');
+			} catch (IOException e1) {
+				// TODO Auto-generated catch block
+				e1.printStackTrace();
+			}
 		}
 		
 	}
@@ -168,7 +179,7 @@ public class ClientSocket implements ISocketController {
 	
 	public String toString()
 	{
-		String result = "ClientSocket is active: "+active+" Socket: "+inConn;
+		String result = "ClientSocket active: "+active+" Socket: "+inConn;
 		return result;
 	}
 
