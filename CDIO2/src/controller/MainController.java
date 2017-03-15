@@ -19,8 +19,8 @@ public class MainController implements IMainController, ISocketObserver, IWeight
 	private ISocketController socketHandler;
 	private IWeightInterfaceController weightController;
 	private KeyState keyState = KeyState.K1;
-	private double actualWeight;
-	private double currentWeight;
+	private double bruttoWeight;
+	private double nettoWeight;
 	private double taraWeight;
 
 	public MainController(ISocketController socketHandler, IWeightInterfaceController weightInterfaceController) {
@@ -69,18 +69,19 @@ public class MainController implements IMainController, ISocketObserver, IWeight
 			case RM208:
 				break;
 			case S:
-				String msg = "S S      "+d.format(currentWeight)+" kg";
+				String msg = "S S      "+d.format(nettoWeight)+" kg";
 				socketHandler.sendMessage(new SocketOutMessage(msg));
 				break;
 			case T:
-				taraWeight = actualWeight;
-				currentWeight = actualWeight-taraWeight;
+				taraWeight = bruttoWeight-taraWeight;
+				nettoWeight = 0;
 				weightController.showMessagePrimaryDisplay("0.00 kg");
 				String tMsg = "T S      "+d.format(taraWeight)+" kg";
 				socketHandler.sendMessage(new SocketOutMessage(tMsg));
 				break;
 			case DW:
 				//TODO: Unable to retrieve and display weight
+				socketHandler.sendMessage(new SocketOutMessage("DW A"));
 				weightController.showMessagePrimaryDisplay("");
 				break;
 			case K:
@@ -135,19 +136,27 @@ public class MainController implements IMainController, ISocketObserver, IWeight
 			case SOFTBUTTON:
 				break;
 			case TARA:
-				socketHandler.sendMessage(new SocketOutMessage("T"));
+				if (keyState.equals(KeyState.K4) || keyState.equals(KeyState.K3))
+				{
+					socketHandler.sendMessage(new SocketOutMessage("T"));
+				}	
 				break;
 			case TEXT:
 				break;
 			case ZERO:
-				socketHandler.sendMessage(new SocketOutMessage("B 0.000"));
-				socketHandler.sendMessage(new SocketOutMessage("T"));
+				if (keyState.equals(KeyState.K4) || keyState.equals(KeyState.K3))
+				{
+					socketHandler.sendMessage(new SocketOutMessage("B 0.000"));
+					socketHandler.sendMessage(new SocketOutMessage("T"));
+				}	
 				break;
 			case C:
 				break;
 			case EXIT:
-				socketHandler.sendMessage(new SocketOutMessage("Q"));
+				if (keyState.equals(KeyState.K4) || keyState.equals(KeyState.K3))
+					socketHandler.sendMessage(new SocketOutMessage("Q"));
 				close();
+				System.exit(0);
 				break;
 			case SEND:
 				if (keyState.equals(KeyState.K4) || keyState.equals(KeyState.K3)) {
@@ -163,9 +172,9 @@ public class MainController implements IMainController, ISocketObserver, IWeight
 
 	@Override
 	public void notifyWeightChange(double newWeight) {
-		actualWeight = newWeight;
-		currentWeight = newWeight-taraWeight;
-		weightController.showMessagePrimaryDisplay(currentWeight + " kg");
+		bruttoWeight = newWeight;
+		nettoWeight = newWeight-taraWeight;
+		weightController.showMessagePrimaryDisplay(nettoWeight + " kg");
 
 	}
 

@@ -35,36 +35,37 @@ public class ClientSocket implements ISocketController {
 	@Override
 	public void run() 
 	{
-
-		while(!inConn.isClosed())
+		try
 		{
-			while(active && inStream!=null)
+			while(!inConn.isClosed())
 			{
-				String inLine;
-				try 
+				while(active && !inConn.isInputShutdown())
 				{
+					String inLine;
 					inLine = inStream.readLine();
 					System.out.println(inLine);
 					if (inLine==null) continue;
 					handleInput(inLine);
-				} 
-				catch (IOException e) 
+
+				}
+				try 
 				{
+					Thread.currentThread().sleep(100);
+				} 
+				catch (InterruptedException e) {
 					e.printStackTrace();
 				}
-				
+				inStream.readLine();
 			}
-			try 
-			{
-				Thread.currentThread().sleep(100);
-			} 
-			catch (InterruptedException e) {
-				e.printStackTrace();
-			}
+			SocketQueue.getInstance().remove(this);
 		}
-		SocketQueue.getInstance().remove(this);
-		
-		
+		catch(IOException e)
+		{
+
+		}
+
+
+
 
 	}
 
@@ -112,18 +113,17 @@ public class ClientSocket implements ISocketController {
 		}
 		catch(IOException e)
 		{
-			
+
 		}
-		catch(ArrayIndexOutOfBoundsException e)
+		catch(ArrayIndexOutOfBoundsException | StringIndexOutOfBoundsException e)
 		{
 			try {
 				outStream.writeBytes("ES"+'\r'+'\n');
 			} catch (IOException e1) {
-				// TODO Auto-generated catch block
 				e1.printStackTrace();
 			}
 		}
-		
+
 	}
 
 	@Override
@@ -176,7 +176,7 @@ public class ClientSocket implements ISocketController {
 	public void setActive(boolean active) {
 		this.active = active;
 	}
-	
+
 	public String toString()
 	{
 		String result = "ClientSocket active: "+active+" Socket: "+inConn;
