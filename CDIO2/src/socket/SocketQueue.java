@@ -4,10 +4,15 @@ import java.net.Socket;
 
 public class SocketQueue {
 
+	private static SocketQueue INSTANCE;
 	private Element firstElement;
 	private Element lastElement;
 	private int numOfElem  = 0;
 
+	private SocketQueue()
+	{
+		
+	}
 	private class Element
 	{
 		ClientSocket socket;
@@ -49,6 +54,7 @@ public class SocketQueue {
 	{
 		if(!isEmpty())
 		{
+			numOfElem--;
 			Element last = firstElement;
 			if(last.next==null)
 			{
@@ -79,9 +85,37 @@ public class SocketQueue {
 		}
 	}
 
+	public void multiCast(SocketOutMessage message)
+	{
+		Element current = firstElement;
+		while(current!=null)
+		{
+			current.socket.sendMessage(message);
+			current = current.next;
+		}
+	}
 	public boolean isEmpty()
 	{
 		return firstElement==null;
+	}
+	
+	public static SocketQueue getInstance()
+	{
+		if(INSTANCE==null)
+			INSTANCE = new SocketQueue();
+		return INSTANCE;
+	}
+	
+	public String toString()
+	{
+		Element current = firstElement;
+		String result = "";
+		while(current!=null)
+		{
+			result += current.socket.toString()+'\r';
+			current = current.next;
+		}
+		return result;
 	}
 
 }
