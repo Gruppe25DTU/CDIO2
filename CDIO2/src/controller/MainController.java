@@ -23,17 +23,17 @@ public class MainController implements IMainController, ISocketObserver, IWeight
 
 	public MainController(ISocketController socketHandler, IWeightInterfaceController weightInterfaceController) {
 		this.init(socketHandler, weightInterfaceController);
+        d = new DecimalFormat();
+        DecimalFormatSymbols dec = new DecimalFormatSymbols();
+        dec.setDecimalSeparator('.');
+        d.setDecimalFormatSymbols(dec);
+        d.applyPattern("0.000");
 	}
 
 	@Override
 	public void init(ISocketController socketHandler, IWeightInterfaceController weightInterfaceController) {
 		this.socketHandler = socketHandler;
 		this.weightController=weightInterfaceController;
-		d = new DecimalFormat();
-		DecimalFormatSymbols dec = new DecimalFormatSymbols();
-		dec.setDecimalSeparator('.');
-		d.setDecimalFormatSymbols(dec);
-		d.applyPattern("0.000");
 	}
 
 	@Override
@@ -49,6 +49,8 @@ public class MainController implements IMainController, ISocketObserver, IWeight
 	}
 
 	//Listening for socket input
+    //TODO: Check KeyState!
+    //TODO: Fix Catch
 	@Override
 	public void notify(SocketInMessage message) {
 		try{
@@ -61,7 +63,7 @@ public class MainController implements IMainController, ISocketObserver, IWeight
 				weightController.showMessagePrimaryDisplay(message.getMessage());
 				break;
 			case Q:
-				close();
+				closeConnections();
 				break;
 			case RM204:
 				break;
@@ -103,12 +105,16 @@ public class MainController implements IMainController, ISocketObserver, IWeight
 	}
 
 	private void updateWeight(double weight) {
+	    String formatedWeight;
 		weightController.setBruttoWeight(weight);
-		weightController.showMessagePrimaryDisplay(d.format(weightController.getNettoWeight()) + "kg");
+		formatedWeight = d.format(weightController.getNettoWeight());
+		if (formatedWeight.length() > 4) formatedWeight = formatedWeight.substring(0,5);
+		weightController.showMessagePrimaryDisplay(formatedWeight + " kg");
 	}
 
-	private void close() {
-		//TODO
+    //TODO: Close all sockets (any streams?)
+	private void closeConnections() {
+
 	}
 
 	private void handleKMessage(SocketInMessage message) {
@@ -134,7 +140,10 @@ public class MainController implements IMainController, ISocketObserver, IWeight
 			break;
 		}
 	}
+
 	//Listening for UI input
+    //TODO: Check KeyState!
+    //TODO: Respond!
 	@Override
 	public void notifyKeyPress(KeyPress keyPress) {
 		try {
@@ -159,7 +168,7 @@ public class MainController implements IMainController, ISocketObserver, IWeight
 				break;
 			case EXIT:
 				socketHandler.sendMessage(new SocketOutMessage("Q"));
-				close();
+				closeConnections();
 				System.exit(0);
 				break;
 			case SEND:

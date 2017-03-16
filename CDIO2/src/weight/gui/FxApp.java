@@ -199,7 +199,7 @@ public class FxApp extends Application {
 			@Override
 			public void run() {
 				
-				txtload.setText(load.length() > 7 ? load.substring(0, 7) : load);
+				txtload.setText(load.length() > 8 ? load.substring(0, 7) : load);
 			}
 		});
 	}
