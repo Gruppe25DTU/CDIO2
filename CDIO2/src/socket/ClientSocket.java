@@ -3,6 +3,7 @@ package socket;
 import java.io.*;
 import java.net.Socket;
 
+import exception.*;
 import socket.SocketInMessage.SocketMessageType;
 
 public class ClientSocket implements IClientSocket {

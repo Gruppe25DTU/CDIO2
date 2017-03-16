@@ -1,4 +1,4 @@
-package socket;
+package exception;
 
 public class CDIOException extends Exception {
 
@@ -14,5 +14,3 @@ public class CDIOException extends Exception {
 		super(msg, cause);
 	}
 }
-
-class IllegalCommandException extends CDIOException {}

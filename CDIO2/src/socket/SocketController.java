@@ -23,7 +23,7 @@ public class SocketController implements ISocketController, ISocketObserver {
 
 	//TODO: Warn MainController if no connection?
 	@Override
-	public void sendMessage(SocketOutMessage message) throws CDIOException {
+	public void sendMessage(SocketOutMessage message) {
 		for (ClientSocket socket : socketSet) {
 			socket.sendMessage(message);
 		}
