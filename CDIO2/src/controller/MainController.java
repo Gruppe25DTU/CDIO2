@@ -19,22 +19,21 @@ public class MainController implements IMainController, ISocketObserver, IWeight
 	private ISocketController socketHandler;
 	private IWeightInterfaceController weightController;
 	private KeyState keyState = KeyState.K1;
-	private double bruttoWeight;
-	private double nettoWeight;
-	private double taraWeight;
-	private String RM20_MSG;
-	private boolean RM20_EXPECTING;
+	private DecimalFormat d;
 
 	public MainController(ISocketController socketHandler, IWeightInterfaceController weightInterfaceController) {
 		this.init(socketHandler, weightInterfaceController);
-		RM20_EXPECTING = false;
-		RM20_MSG = "";
 	}
 
 	@Override
 	public void init(ISocketController socketHandler, IWeightInterfaceController weightInterfaceController) {
 		this.socketHandler = socketHandler;
 		this.weightController=weightInterfaceController;
+		d = new DecimalFormat();
+		DecimalFormatSymbols dec = new DecimalFormatSymbols();
+		dec.setDecimalSeparator('.');
+		d.setDecimalFormatSymbols(dec);
+		d.applyPattern("0.000");
 	}
 
 	@Override
@@ -53,17 +52,13 @@ public class MainController implements IMainController, ISocketObserver, IWeight
 	@Override
 	public void notify(SocketInMessage message) {
 		try{
-			DecimalFormat d = new DecimalFormat();
-			DecimalFormatSymbols dec = new DecimalFormatSymbols();
-			dec.setDecimalSeparator('.');
-			d.setDecimalFormatSymbols(dec);
-			d.applyPattern("0.000");
 			switch (message.getType()) {
 			case B:
-				weightController.showMessagePrimaryDisplay(message.getMessage() + " kg");
+				double weight = Double.valueOf(message.getMessage());
+				updateWeight(weight);
 				break;
 			case D:
-				weightController.showMessagePrimaryDisplay(message.getMessage()); 
+				weightController.showMessagePrimaryDisplay(message.getMessage());
 				break;
 			case Q:
 				close();
@@ -73,23 +68,23 @@ public class MainController implements IMainController, ISocketObserver, IWeight
 			case RM208:
 				weightController.showMessageSecondaryDisplay(message.getMessage());
 				socketHandler.sendMessage(new SocketOutMessage("RM20 B"));
-				RM20_EXPECTING = true;
+				weightController.setRM20_EXPECTING(true);
 				break;
 			case S:
-				String msg = "S S      "+d.format(nettoWeight)+" kg";
+				String msg = "S S      "+d.format(weightController.getNettoWeight())+"kg";
 				socketHandler.sendMessage(new SocketOutMessage(msg));
 				break;
 			case T:
-				taraWeight = bruttoWeight-taraWeight;
-				nettoWeight = 0;
-				weightController.showMessagePrimaryDisplay("0.00 kg");
-				String tMsg = "T S      "+d.format(taraWeight)+" kg";
+				weight = weightController.getBruttoWeight();
+				weightController.setTaraWeight(weight);
+				updateWeight(weight);
+				String tMsg = "T S      "+d.format(weightController.getTaraWeight())+" kg";
 				socketHandler.sendMessage(new SocketOutMessage(tMsg));
 				break;
 			case DW:
-				//TODO: Unable to retrieve and display weight
+				weight = weightController.getBruttoWeight();
+				updateWeight(weight);
 				socketHandler.sendMessage(new SocketOutMessage("DW A"));
-				weightController.showMessagePrimaryDisplay("");
 				break;
 			case K:
 				handleKMessage(message);
@@ -105,6 +100,11 @@ public class MainController implements IMainController, ISocketObserver, IWeight
 		}
 
 
+	}
+
+	private void updateWeight(double weight) {
+		weightController.setBruttoWeight(weight);
+		weightController.showMessagePrimaryDisplay(d.format(weightController.getNettoWeight()) + "kg");
 	}
 
 	private void close() {
@@ -137,45 +137,38 @@ public class MainController implements IMainController, ISocketObserver, IWeight
 	//Listening for UI input
 	@Override
 	public void notifyKeyPress(KeyPress keyPress) {
-		//TODO implement logic for handling input from ui
 		try {
 			switch (keyPress.getType()) {
 			case SOFTBUTTON:
 				break;
 			case TARA:
-				if (keyState.equals(KeyState.K4) || keyState.equals(KeyState.K3))
-				{
-					socketHandler.sendMessage(new SocketOutMessage("T"));
-				}	
+				double weight = weightController.getBruttoWeight();
+				weightController.setTaraWeight(weight);
+				updateWeight(weight);
 				break;
 			case TEXT:
-				if(RM20_EXPECTING && RM20_MSG.length()<31)
-					RM20_MSG+=keyPress.getCharacter();
-				weightController.showMessageSecondaryDisplay(RM20_MSG);
+				if(weightController.isRM20_EXPECTING() && weightController.getRM20_MSG().length()<31)
+					weightController.setRM20_MSG(weightController.getRM20_MSG()+keyPress.getCharacter());
+				weightController.showMessageSecondaryDisplay(weightController.getRM20_MSG());
 				break;
 			case ZERO:
-				if (keyState.equals(KeyState.K4) || keyState.equals(KeyState.K3))
-				{
-					socketHandler.sendMessage(new SocketOutMessage("B 0.000"));
-					socketHandler.sendMessage(new SocketOutMessage("T"));
-				}	
+				weightController.setTaraWeight(0.0);
+				updateWeight(0.0);
 				break;
 			case C:
 				break;
 			case EXIT:
-				if (keyState.equals(KeyState.K4) || keyState.equals(KeyState.K3))
-					socketHandler.sendMessage(new SocketOutMessage("Q"));
+				socketHandler.sendMessage(new SocketOutMessage("Q"));
 				close();
 				System.exit(0);
 				break;
 			case SEND:
-				if (keyState.equals(KeyState.K4) || keyState.equals(KeyState.K3)) 
-					socketHandler.sendMessage(new SocketOutMessage("K A 3"));
-				if(RM20_EXPECTING)
+				socketHandler.sendMessage(new SocketOutMessage("K A 3"));
+				if(weightController.isRM20_EXPECTING())
 				{
-					String msg = "RM20 A \"" + RM20_MSG+'\"';
+					String msg = "RM20 A \"" + weightController.getRM20_MSG()+'\"';
 					socketHandler.sendMessage(new SocketOutMessage(msg));
-					RM20_EXPECTING = false;
+					weightController.setRM20_EXPECTING(false);
 					weightController.showMessageSecondaryDisplay("");
 				}
 				
@@ -189,10 +182,7 @@ public class MainController implements IMainController, ISocketObserver, IWeight
 
 	@Override
 	public void notifyWeightChange(double newWeight) {
-		bruttoWeight = newWeight;
-		nettoWeight = newWeight-taraWeight;
-		weightController.showMessagePrimaryDisplay(nettoWeight + " kg");
-
+		updateWeight(newWeight);
 	}
 
 }

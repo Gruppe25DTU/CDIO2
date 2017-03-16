@@ -73,6 +73,7 @@ public class ClientSocket implements ISocketController {
 	{
 		try
 		{
+			//TODO: Validate input
 			switch (inLine.split(" ")[0]) 
 			{
 			case "RM20": // Display a message in the secondary display and wait for response

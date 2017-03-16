@@ -12,6 +12,48 @@ public class WeightInterfaceControllerGUI implements IWeightInterfaceController 
 	private ArrayList<IWeightInterfaceObserver> observers = new ArrayList<IWeightInterfaceObserver>(); 
 	private FxApp fxApp;
 
+	public double getBruttoWeight() {
+		return bruttoWeight;
+	}
+
+	public void setBruttoWeight(double bruttoWeight) {
+		this.bruttoWeight = bruttoWeight;
+	}
+
+	public double getNettoWeight() {
+		return bruttoWeight - taraWeight;
+	}
+
+	public double getTaraWeight() {
+		return taraWeight;
+	}
+
+	public void setTaraWeight(double taraWeight) {
+		this.taraWeight = taraWeight;
+	}
+
+	public String getRM20_MSG() {
+		return RM20_MSG;
+	}
+
+	public void setRM20_MSG(String RM20_MSG) {
+		this.RM20_MSG = RM20_MSG;
+	}
+
+	public boolean isRM20_EXPECTING() {
+		return RM20_EXPECTING;
+	}
+
+	public void setRM20_EXPECTING(boolean RM20_EXPECTING) {
+		this.RM20_EXPECTING = RM20_EXPECTING;
+	}
+
+	private double bruttoWeight;
+	private double nettoWeight;
+	private double taraWeight;
+	private String RM20_MSG = "";
+	private boolean RM20_EXPECTING = false;
+
 	public WeightInterfaceControllerGUI() { instance = this; }
 	@Override public void run() { FxApp.go(); }
 	public static WeightInterfaceControllerGUI getInstance() { return instance; }
