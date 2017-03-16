@@ -81,7 +81,7 @@ public class MainController implements IMainController, ISocketObserver, IWeight
 			break;
 		case S:
 			if (keyState.equals(KeyState.K3) || keyState.equals(KeyState.K4)) {
-				String msg = "S S      "+d.format(weightController.getNettoWeight())+"kg";
+				String msg = "S S      "+d.format(weightController.getNettoWeight())+" kg";
 				socketHandler.sendMessage(new SocketOutMessage(msg));
 			}
 			break;
