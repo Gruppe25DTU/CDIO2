@@ -76,8 +76,21 @@ public class ClientSocket implements ISocketController {
 			switch (inLine.split(" ")[0]) 
 			{
 			case "RM20": // Display a message in the secondary display and wait for response
-				String rMsg = inLine.substring(5,inLine.length());
-				notifyObservers(new SocketInMessage(SocketMessageType.RM208,rMsg));
+				String rMsg = "";
+				boolean correct = false;
+				if(inLine.charAt(7)!='\"')
+					outStream.writeBytes("ES"+'\r'+'\n');
+				for(int i = 8; i<38;i++)
+					if(inLine.charAt(i)=='\"')
+					{
+						correct = true;
+						rMsg = inLine.substring(8,i);
+						break;
+					}
+				if(correct)
+					notifyObservers(new SocketInMessage(SocketMessageType.RM208,rMsg));
+				else
+					outStream.writeBytes("ES"+'\r'+'\n');
 				break;
 			case "D":// Display a message in the primary display
 				notifyObservers(new SocketInMessage(SocketMessageType.D, inLine.substring(3,inLine.length()))); 			

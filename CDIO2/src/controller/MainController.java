@@ -22,9 +22,13 @@ public class MainController implements IMainController, ISocketObserver, IWeight
 	private double bruttoWeight;
 	private double nettoWeight;
 	private double taraWeight;
+	private String RM20_MSG;
+	private boolean RM20_EXPECTING;
 
 	public MainController(ISocketController socketHandler, IWeightInterfaceController weightInterfaceController) {
 		this.init(socketHandler, weightInterfaceController);
+		RM20_EXPECTING = false;
+		RM20_MSG = "";
 	}
 
 	@Override
@@ -67,6 +71,9 @@ public class MainController implements IMainController, ISocketObserver, IWeight
 			case RM204:
 				break;
 			case RM208:
+				weightController.showMessageSecondaryDisplay(message.getMessage());
+				socketHandler.sendMessage(new SocketOutMessage("RM20 B"));
+				RM20_EXPECTING = true;
 				break;
 			case S:
 				String msg = "S S      "+d.format(nettoWeight)+" kg";
@@ -142,6 +149,9 @@ public class MainController implements IMainController, ISocketObserver, IWeight
 				}	
 				break;
 			case TEXT:
+				if(RM20_EXPECTING && RM20_MSG.length()<31)
+					RM20_MSG+=keyPress.getCharacter();
+				weightController.showMessageSecondaryDisplay(RM20_MSG);
 				break;
 			case ZERO:
 				if (keyState.equals(KeyState.K4) || keyState.equals(KeyState.K3))
@@ -159,9 +169,16 @@ public class MainController implements IMainController, ISocketObserver, IWeight
 				System.exit(0);
 				break;
 			case SEND:
-				if (keyState.equals(KeyState.K4) || keyState.equals(KeyState.K3)) {
+				if (keyState.equals(KeyState.K4) || keyState.equals(KeyState.K3)) 
 					socketHandler.sendMessage(new SocketOutMessage("K A 3"));
+				if(RM20_EXPECTING)
+				{
+					String msg = "RM20 A \"" + RM20_MSG+'\"';
+					socketHandler.sendMessage(new SocketOutMessage(msg));
+					RM20_EXPECTING = false;
+					weightController.showMessageSecondaryDisplay("");
 				}
+				
 				break;
 			}
 		} catch (CONNException e) {
