@@ -35,10 +35,13 @@ public class ClientSocket implements IClientSocket {
 		try
 		{
 			String inLine = "";
-			inStream.skip(inConn.getInputStream().available());
 			while(!inConn.isClosed() && !inConn.isInputShutdown())
 			{
 				inLine = inStream.readLine();
+				//Remove leading chars which are not a-zA-Z
+				while (inLine.charAt(0) < 65 || inLine.charAt(0) > 122) {
+					inLine = inLine.substring(1);
+				}
 				System.out.println(inLine);
 				if (inLine==null) break;
 				if (inLine.trim().equals("")) continue;
