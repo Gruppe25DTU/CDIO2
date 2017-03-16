@@ -4,7 +4,6 @@ package controller;
 import java.text.DecimalFormat;
 import java.text.DecimalFormatSymbols;
 
-import exception.*;
 import socket.*;
 import weight.IWeightInterfaceController;
 import weight.IWeightInterfaceObserver;
@@ -51,7 +50,6 @@ public class MainController implements IMainController, ISocketObserver, IWeight
 
 	//Listening for socket input
     //TODO: Check KeyState!
-    //TODO: Fix Catch
 	@Override
 	public void notify(SocketInMessage message) {
 		switch (message.getType()) {
@@ -60,54 +58,57 @@ public class MainController implements IMainController, ISocketObserver, IWeight
 			updateWeight(weight);
 			break;
 		case D:
-			weightController.showMessagePrimaryDisplay(message.getMessage());
+			if (keyState.equals(KeyState.K1) || keyState.equals(KeyState.K4)) {
+				weightController.showMessagePrimaryDisplay(message.getMessage());
+			}
+			if (keyState.equals(KeyState.K3) || keyState.equals(KeyState.K4)) {
+				socketHandler.sendMessage(new SocketOutMessage("D A"));
+			}
 			break;
 		case Q:
-			closeConnections();
-			break;
-		case RM204:
+			if (keyState.equals(KeyState.K1) || keyState.equals(KeyState.K4)) {
+				closeConnections();
+			}
 			break;
 		case RM208:
-			weightController.showMessageSecondaryDisplay(message.getMessage());
-			socketHandler.sendMessage(new SocketOutMessage("RM20 B"));
-			weightController.setRM20_EXPECTING(true);
+			if (keyState.equals(KeyState.K1) || keyState.equals(KeyState.K4)) {
+				weightController.showMessageSecondaryDisplay(message.getMessage());
+				weightController.setRM20_EXPECTING(true);
+			}
+			if (keyState.equals(KeyState.K3) || keyState.equals(KeyState.K4)) {
+				socketHandler.sendMessage(new SocketOutMessage("RM20 B"));
+			}
 			break;
 		case S:
-			String msg = "S S      "+d.format(weightController.getNettoWeight())+"kg";
-			socketHandler.sendMessage(new SocketOutMessage(msg));
+			if (keyState.equals(KeyState.K3) || keyState.equals(KeyState.K4)) {
+				String msg = "S S      "+d.format(weightController.getNettoWeight())+"kg";
+				socketHandler.sendMessage(new SocketOutMessage(msg));
+			}
 			break;
 		case T:
-			weight = weightController.getBruttoWeight();
-			weightController.setTaraWeight(weight);
-			updateWeight(weight);
-			String tMsg = "T S      "+d.format(weightController.getTaraWeight())+" kg";
-			socketHandler.sendMessage(new SocketOutMessage(tMsg));
+			performTara();
 			break;
 		case DW:
-			weight = weightController.getBruttoWeight();
-			updateWeight(weight);
-			socketHandler.sendMessage(new SocketOutMessage("DW A"));
+			if (keyState.equals(KeyState.K1) || keyState.equals(KeyState.K4)) {
+				weight = weightController.getBruttoWeight();
+				updateWeight(weight);
+			}
+			if (keyState.equals(KeyState.K3) || keyState.equals(KeyState.K4)) {
+				socketHandler.sendMessage(new SocketOutMessage("DW A"));
+			}
 			break;
 		case K:
 			handleKMessage(message);
 			break;
 		case P111:
-			weightController.showMessageSecondaryDisplay(message.getMessage());
+			if (keyState.equals(KeyState.K1) || keyState.equals(KeyState.K4)) {
+				weightController.showMessageSecondaryDisplay(message.getMessage());
+			}
+			if (keyState.equals(KeyState.K3) || keyState.equals(KeyState.K4)) {
+				socketHandler.sendMessage(new SocketOutMessage("P111 A"));
+			}
 			break;
 		}
-	}
-
-	private void updateWeight(double weight) {
-	    String formatedWeight;
-		weightController.setBruttoWeight(weight);
-		formatedWeight = d.format(weightController.getNettoWeight());
-		if (formatedWeight.length() > 4) formatedWeight = formatedWeight.substring(0,5);
-		weightController.showMessagePrimaryDisplay(formatedWeight + " kg");
-	}
-
-    //TODO: Close all sockets (any streams?)
-	private void closeConnections() {
-
 	}
 
 	private void handleKMessage(SocketInMessage message) {
@@ -126,50 +127,90 @@ public class MainController implements IMainController, ISocketObserver, IWeight
 			break;
 		default:
 			socketHandler.sendMessage(new SocketOutMessage("ES"));
+			return;
+		}
+		if (keyState.equals(KeyState.K3) || keyState.equals(KeyState.K4)) {
+			socketHandler.sendMessage(new SocketOutMessage("K A"));
 		}
 	}
 
 	//Listening for UI input
-    //TODO: Check KeyState!
-    //TODO: Respond!
 	@Override
 	public void notifyKeyPress(KeyPress keyPress) {
 		switch (keyPress.getType()) {
 		case SOFTBUTTON:
 			break;
 		case TARA:
-			double weight = weightController.getBruttoWeight();
-			weightController.setTaraWeight(weight);
-			updateWeight(weight);
+			performTara();
 			break;
 		case TEXT:
-			if(weightController.isRM20_EXPECTING() && weightController.getRM20_MSG().length()<31)
-				weightController.setRM20_MSG(weightController.getRM20_MSG()+keyPress.getCharacter());
-			weightController.showMessageSecondaryDisplay(weightController.getRM20_MSG());
+			if (keyState.equals(KeyState.K1) || keyState.equals(KeyState.K4)) {
+				if(weightController.isRM20_EXPECTING() && weightController.getRM20_MSG().length()<31)
+                    weightController.setRM20_MSG(weightController.getRM20_MSG()+keyPress.getCharacter());
+				weightController.showMessageSecondaryDisplay(weightController.getRM20_MSG());
+			}
 			break;
 		case ZERO:
-			weightController.setTaraWeight(0.0);
 			updateWeight(0.0);
+			performTara();
 			break;
 		case C:
 			break;
 		case EXIT:
-			socketHandler.sendMessage(new SocketOutMessage("Q"));
-			closeConnections();
-			System.exit(0);
+			if (keyState.equals(KeyState.K1) || keyState.equals(KeyState.K4)) {
+				closeConnections();
+				System.exit(0);
+			}
+			if (keyState.equals(KeyState.K3) || keyState.equals(KeyState.K4)) {
+				socketHandler.sendMessage(new SocketOutMessage("Q"));
+			}
 			break;
 		case SEND:
-			socketHandler.sendMessage(new SocketOutMessage("K A 3"));
-			if(weightController.isRM20_EXPECTING())
-			{
-				String msg = "RM20 A \"" + weightController.getRM20_MSG()+'\"';
-				socketHandler.sendMessage(new SocketOutMessage(msg));
-				weightController.setRM20_EXPECTING(false);
-				weightController.showMessageSecondaryDisplay("");
+			String msg = "RM20 A \"" + weightController.getRM20_MSG()+'\"';
+			if (keyState.equals(KeyState.K1) || keyState.equals(KeyState.K4)) {
+				if(weightController.isRM20_EXPECTING())
+                {
+                    weightController.setRM20_EXPECTING(false);
+                    weightController.showMessageSecondaryDisplay("");
+                }
 			}
-
+			if (keyState.equals(KeyState.K3) || keyState.equals(KeyState.K4)) {
+				socketHandler.sendMessage(new SocketOutMessage("K A 3"));
+				socketHandler.sendMessage(new SocketOutMessage(msg));
+			}
 			break;
 		}
+	}
+
+	private void performTara() {
+		double weight;
+		if (keyState.equals(KeyState.K1) || keyState.equals(KeyState.K4)) {
+			weight = weightController.getBruttoWeight();
+			weightController.setTaraWeight(weight);
+			updateWeight(weight);
+		}
+		if (keyState.equals(KeyState.K3) || keyState.equals(KeyState.K4)) {
+			String tMsg = "T S      "+d.format(weightController.getTaraWeight())+" kg";
+			socketHandler.sendMessage(new SocketOutMessage(tMsg));
+		}
+	}
+
+	private void updateWeight(double weight) {
+		String formattedWeight;
+		if (keyState.equals(KeyState.K1) || keyState.equals(KeyState.K4)) {
+			weightController.setBruttoWeight(weight);
+			formattedWeight = d.format(weightController.getNettoWeight());
+			if (formattedWeight.length() > 4) formattedWeight = formattedWeight.substring(0,5);
+			weightController.showMessagePrimaryDisplay(formattedWeight + " kg");
+		}
+		if (keyState.equals(KeyState.K3) || keyState.equals(KeyState.K4)) {
+			socketHandler.sendMessage(new SocketOutMessage("DB"));
+		}
+	}
+
+	//TODO: Close all sockets (any streams?)
+	private void closeConnections() {
+
 	}
 
 	@Override
