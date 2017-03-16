@@ -18,7 +18,7 @@ public class ClientSocket implements ISocketController {
 	private BufferedReader inStream;
 	private boolean active;
 
-	public ClientSocket(Socket inConn) {
+	public ClientSocket(Socket inConn, ISocketObserver observer) {
 		this.inConn = inConn;
 		try 
 		{
@@ -80,7 +80,7 @@ public class ClientSocket implements ISocketController {
 				String rMsg = "";
 				boolean correct = false;
 				if(inLine.charAt(7)!='\"')
-					outStream.writeBytes("ES"+'\r'+'\n');
+				    throw new IllegalCommandException();
 				for(int i = 8; i<38;i++)
 					if(inLine.charAt(i)=='\"')
 					{
@@ -91,10 +91,10 @@ public class ClientSocket implements ISocketController {
 				if(correct)
 					notifyObservers(new SocketInMessage(SocketMessageType.RM208,rMsg));
 				else
-					outStream.writeBytes("ES"+'\r'+'\n');
+				    throw new IllegalCommandException();
 				break;
 			case "D":// Display a message in the primary display
-				notifyObservers(new SocketInMessage(SocketMessageType.D, inLine.substring(3,inLine.length()))); 			
+				notifyObservers(new SocketInMessage(SocketMessageType.D, inLine.substring(3,inLine.length()-1)));
 				break;
 			case "DW": //Clear primary display
 				notifyObservers(new SocketInMessage(SocketMessageType.DW,""));
@@ -121,24 +121,23 @@ public class ClientSocket implements ISocketController {
 				inConn.close();
 				break;
 			default: //Something went wrong?
-				outStream.writeBytes("ES"+'\r'+'\n');
-				break;
+                throw new IllegalCommandException();
 			}
 		}
 		catch(IOException e)
 		{
 
 		}
-		catch(ArrayIndexOutOfBoundsException | StringIndexOutOfBoundsException e)
+		catch(ArrayIndexOutOfBoundsException | StringIndexOutOfBoundsException | IllegalCommandException e)
 		{
 			try {
 				outStream.writeBytes("ES"+'\r'+'\n');
 			} catch (IOException e1) {
 				e1.printStackTrace();
 			}
-		}
+        }
 
-	}
+    }
 
 	@Override
 	public void registerObserver(ISocketObserver observer) {

@@ -96,7 +96,7 @@ public class MainController implements IMainController, ISocketObserver, IWeight
 				break;
 			}
 		}
-		catch(CONNException e)
+		catch(CDIOException e)
 		{
 			e.printStackTrace();
 		}
@@ -134,7 +134,7 @@ public class MainController implements IMainController, ISocketObserver, IWeight
 		default:
 			try {
 				socketHandler.sendMessage(new SocketOutMessage("ES"));
-			} catch (CONNException e) {
+			} catch (CDIOException e) {
 				e.printStackTrace();
 			}
 			break;
@@ -183,7 +183,7 @@ public class MainController implements IMainController, ISocketObserver, IWeight
 				
 				break;
 			}
-		} catch (CONNException e) {
+		} catch (CDIOException e) {
 			e.printStackTrace();
 		}
 

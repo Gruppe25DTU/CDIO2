@@ -6,7 +6,6 @@ import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.HashSet;
 import java.util.Set;
-import socket.SocketInMessage.SocketMessageType;
 
 public class SocketController implements ISocketController, ISocketObserver {
 	private Set<ISocketObserver> observers = new HashSet<ISocketObserver>();
@@ -32,7 +31,7 @@ public class SocketController implements ISocketController, ISocketObserver {
 	}
 
 	@Override
-	public void sendMessage(SocketOutMessage message) throws CONNException {
+	public void sendMessage(SocketOutMessage message) throws CDIOException {
 		if(activeSocket!=null)
 			activeSocket.sendMessage(message);
 		queue.multiCast(message);
@@ -60,7 +59,7 @@ public class SocketController implements ISocketController, ISocketObserver {
 	private void waitForConnections(ServerSocket listeningSocket) {
 		try {
 			Socket activeSocket = listeningSocket.accept(); //Blocking call
-			ClientSocket newConn = new ClientSocket(activeSocket);
+			ClientSocket newConn = new ClientSocket(activeSocket, this);
 			newConn.registerObserver(this);
 			queue.enQueue(newConn);
 			new Thread(newConn).start();
