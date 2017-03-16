@@ -39,7 +39,7 @@ public class ClientSocket implements IClientSocket {
 			{
 				inLine = inStream.readLine();
 				//Remove leading chars which are not a-zA-Z
-				while (inLine.charAt(0) < 65 || inLine.charAt(0) > 122) {
+				while (inLine.length() > 0 && (inLine.charAt(0) < 65 || inLine.charAt(0) > 122)) {
 					inLine = inLine.substring(1);
 				}
 				System.out.println(inLine);
