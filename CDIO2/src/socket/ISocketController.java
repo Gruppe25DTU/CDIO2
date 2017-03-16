@@ -6,6 +6,7 @@ public interface ISocketController extends Runnable{
 	void registerObserver(ISocketObserver observer);
 	void unRegisterObserver(ISocketObserver observer);
 	void sendMessage(SocketOutMessage message) throws CDIOException;
-
+	void unregisterClientSocket(IClientSocket socket);
+	void notify(SocketInMessage msg);
 
 }

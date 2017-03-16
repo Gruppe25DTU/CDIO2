@@ -8,10 +8,8 @@ import java.util.HashSet;
 import java.util.Set;
 
 public class SocketController implements ISocketController, ISocketObserver {
-	private Set<ISocketObserver> observers = new HashSet<ISocketObserver>();
-	private SocketQueue queue;
-	private ClientSocket activeSocket;
-	private Thread qA;
+	private Set<ISocketObserver> observers = new HashSet<>();
+	private Set<ClientSocket> socketSet = new HashSet<>();
 
 	@Override
 	public void registerObserver(ISocketObserver observer) {
@@ -22,19 +20,13 @@ public class SocketController implements ISocketController, ISocketObserver {
 	public void unRegisterObserver(ISocketObserver observer) {
 		observers.remove(observer);
 	}
-	
-	public SocketController()
-	{
-		queue = SocketQueue.getInstance();
-		qA = new QueueAgent(this);
-		qA.start();
-	}
 
+	//TODO: Warn MainController if no connection?
 	@Override
 	public void sendMessage(SocketOutMessage message) throws CDIOException {
-		if(activeSocket!=null)
-			activeSocket.sendMessage(message);
-		queue.multiCast(message);
+		for (ClientSocket socket : socketSet) {
+			socket.sendMessage(message);
+		}
 	}
 
 	@Override
@@ -44,7 +36,10 @@ public class SocketController implements ISocketController, ISocketObserver {
 		{ 
 			while (true)
 			{
-				waitForConnections(listeningSocket); 	
+				Socket newSocket = listeningSocket.accept();
+				ClientSocket socket = new ClientSocket(newSocket, this); //Blocking call
+				socketSet.add(socket);
+				new Thread(socket).start();
 			}		
 		} 
 		catch (IOException e1) 
@@ -56,22 +51,10 @@ public class SocketController implements ISocketController, ISocketObserver {
 
 	}
 
-	private void waitForConnections(ServerSocket listeningSocket) {
-		try {
-			Socket activeSocket = listeningSocket.accept(); //Blocking call
-			ClientSocket newConn = new ClientSocket(activeSocket, this);
-			newConn.registerObserver(this);
-			queue.enQueue(newConn);
-			new Thread(newConn).start();
-
-		}
-		catch (IOException e) {
-			//TODO maybe notify mainController?
-			e.printStackTrace();
-		}
+	@Override
+	public void unregisterClientSocket(IClientSocket socket) {
+		socketSet.remove(socket);
 	}
-
-
 
 
 	private void notifyObservers(SocketInMessage message) {
@@ -82,18 +65,7 @@ public class SocketController implements ISocketController, ISocketObserver {
 
 	@Override
 	synchronized public void notify(SocketInMessage message) {
-		qA.interrupt();
 		notifyObservers(message);
-	}
-
-	public ClientSocket getActiveSocket()
-	{
-		return activeSocket;
-	}
-	
-	public void setActiveSocket(ClientSocket newSocket)
-	{
-		this.activeSocket = newSocket;
 	}
 }
 
