@@ -58,5 +58,6 @@ public class WeightTest {
     @After
     public void close() throws InterruptedException {
         socketController.closeAllClients();
+        SocketController.output = "";
     }
 }
