@@ -77,11 +77,12 @@ public class ClientSocket implements IClientSocket {
 	{
 		try
 		{
+			
 			switch (inLine.split(" ")[0])
 			{
 				case "RM20": // Display a message in the secondary display and wait for response
 					String[] rSplits = inLine.split("\"");
-					if (rSplits.length > 2 && rSplits[0] == "RM20 8 ") {
+					if (rSplits.length > 2 && rSplits[0].equals("RM20 8 ")){
 						String rMsg = rSplits[1];
 						notifyObservers(new SocketInMessage(SocketMessageType.RM208,rMsg));
 					}
