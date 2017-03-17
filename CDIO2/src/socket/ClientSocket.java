@@ -2,6 +2,7 @@ package socket;
 
 import java.io.*;
 import java.net.Socket;
+import java.util.ConcurrentModificationException;
 
 import exception.*;
 import socket.SocketInMessage.SocketMessageType;
@@ -32,39 +33,46 @@ public class ClientSocket implements IClientSocket {
 	@Override
 	public void run() 
 	{
-		try
+		String inLine = "";
+		while(!inConn.isClosed() && !inConn.isInputShutdown())
 		{
-			String inLine = "";
-			while(!inConn.isClosed() && !inConn.isInputShutdown())
-			{
+			try {
 				inLine = inStream.readLine();
-				//Remove leading chars which are not a-zA-Z
-				while (inLine.length() > 0 && (inLine.charAt(0) < 65 || inLine.charAt(0) > 122)) {
-					inLine = inLine.substring(1);
+			} catch (IOException e) {
+				if (inConn.isClosed()) {
+					//Connection closed while waiting for input
+					break;
 				}
-				System.out.println(inLine);
-				if (inLine==null) break;
-				if (inLine.trim().equals("")) continue;
-				handleInput(inLine);
-				try
-				{
-					Thread.currentThread().sleep(100);
+				e.printStackTrace();
+				//Try to reestablish the stream
+				try {
+					inStream = new BufferedReader(new InputStreamReader(inConn.getInputStream()));
+				} catch (IOException e1) {
+					e1.printStackTrace();
+					break;
 				}
-				catch (InterruptedException e) {
-					e.printStackTrace();
-				}
-
 			}
-			controller.unregisterClientSocket(this);
-			inConn.close();
+			if (inLine==null) break;
+			//Remove leading chars which are not a-zA-Z
+			while (inLine.length() > 0 && (inLine.charAt(0) < 65 || inLine.charAt(0) > 122)) {
+				inLine = inLine.substring(1);
+			}
+			System.out.println(inLine);
+			if (inLine.trim().equals("")) continue;
+			handleInput(inLine);
+			try
+			{
+				Thread.currentThread().sleep(100);
+			}
+			catch (InterruptedException e) {
+				e.printStackTrace();
+			}
 		}
-		catch(IOException e)
-		{
-
-		}
+		//Ensure proper closure
+		close();
 	}
 
-	public void handleInput(String inLine)
+	private void handleInput(String inLine)
 	{
 		try
 		{
@@ -72,19 +80,11 @@ public class ClientSocket implements IClientSocket {
 			switch (inLine.split(" ")[0])
 			{
 				case "RM20": // Display a message in the secondary display and wait for response
-					String rMsg = "";
-					boolean correct = false;
-					if(inLine.charAt(7)!='\"')
-						throw new IllegalCommandException();
-					for(int i = 8; i<38;i++)
-						if(inLine.charAt(i)=='\"')
-						{
-							correct = true;
-							rMsg = inLine.substring(8,i);
-							break;
-						}
-					if(correct)
+					String[] rSplits = inLine.split("\"");
+					if (rSplits.length > 2 && rSplits[0] == "RM20 8 ") {
+						String rMsg = rSplits[1];
 						notifyObservers(new SocketInMessage(SocketMessageType.RM208,rMsg));
+					}
 					else
 						throw new IllegalCommandException();
 					break;
@@ -95,9 +95,13 @@ public class ClientSocket implements IClientSocket {
 					notifyObservers(new SocketInMessage(SocketMessageType.DW,""));
 					break;
 				case "P111": //Show something in secondary display
-					String pMsg = inLine.substring(5,inLine.length());
-					notifyObservers(new SocketInMessage(SocketMessageType.P111,pMsg));
-					break;
+					String[] pSplits = inLine.split("\"");
+					if (pSplits.length == 2 && pSplits[0].equals("P111 ")) {
+						String pMsg = pSplits[1];
+						notifyObservers(new SocketInMessage(SocketMessageType.P111,pMsg));
+						break;
+					}
+					throw new IllegalCommandException();
 				case "T": // Tare the weight
 					notifyObservers(new SocketInMessage(SocketMessageType.T,""));
 					break;
@@ -112,16 +116,11 @@ public class ClientSocket implements IClientSocket {
 					break;
 				case "Q": // Quit
 					notifyObservers(new SocketInMessage(SocketMessageType.Q,""));
-					controller.unregisterClientSocket(this);
-					inConn.close();
+					close();
 					break;
 				default: //Something went wrong?
 					throw new IllegalCommandException();
 			}
-		}
-		catch(IOException e)
-		{
-
 		}
 		catch(ArrayIndexOutOfBoundsException | StringIndexOutOfBoundsException | IllegalCommandException e)
 		{
@@ -131,24 +130,24 @@ public class ClientSocket implements IClientSocket {
 
 	}
 
+	public void close() {
+		try {
+			controller.unRegisterClientSocket(this);
+		} catch (ConcurrentModificationException e) {
+			e.printStackTrace();
+			//Something is iterating over client sockets and closing them
+			//Must be controller closing all sockets
+			//Controller is responsible for removing clients via its iterator
+		}
+		try {
+			inConn.close();
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+	}
+
 	private void notifyObservers(SocketInMessage message) {
 		controller.notify(message);
-	}
-
-	public Socket getInConn() {
-		return inConn;
-	}
-
-	public void setInConn(Socket inConn) {
-		this.inConn = inConn;
-	}
-
-	public boolean isActive() {
-		return active;
-	}
-
-	public void setActive(boolean active) {
-		this.active = active;
 	}
 
 	public String toString()

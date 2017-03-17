@@ -5,11 +5,12 @@ import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.Set;
 
-public class SocketController implements ISocketController, ISocketObserver {
+public class SocketController implements ISocketController {
 	private Set<ISocketObserver> observers = new HashSet<>();
-	private Set<ClientSocket> socketSet = new HashSet<>();
+	private Set<IClientSocket> clientSockets = new HashSet<>();
 
 	@Override
 	public void registerObserver(ISocketObserver observer) {
@@ -21,39 +22,59 @@ public class SocketController implements ISocketController, ISocketObserver {
 		observers.remove(observer);
 	}
 
-	//TODO: Warn MainController if no connection?
 	@Override
 	public void sendMessage(SocketOutMessage message) {
-		for (ClientSocket socket : socketSet) {
+		for (IClientSocket socket : clientSockets) {
 			socket.sendMessage(message);
 		}
 	}
 
 	@Override
 	public void run() {
-		//TODO some logic for listening to a socket //(Using try with resources for auto-close of socket)
 		try (ServerSocket listeningSocket = new ServerSocket(Port))
 		{ 
 			while (true)
 			{
 				Socket newSocket = listeningSocket.accept();
 				ClientSocket socket = new ClientSocket(newSocket, this); //Blocking call
-				socketSet.add(socket);
+				registerClientSocket(socket);
 				new Thread(socket).start();
 			}		
 		} 
 		catch (IOException e1) 
 		{
-			// TODO Maybe notify MainController?
 			e1.printStackTrace();
+			if (clientSockets.size() == 0) {
+				//Unable to listen and no children exists - might as well die
+				for (ISocketObserver observer : observers) {
+					observer.close();
+				}
+			}
 		} 
 
 
 	}
 
 	@Override
-	public void unregisterClientSocket(IClientSocket socket) {
-		socketSet.remove(socket);
+	public void closeAllClients() {
+		if (clientSockets.size() > 0) {
+			Iterator<IClientSocket> it = clientSockets.iterator();
+			while(it.hasNext()) {
+				IClientSocket client = it.next();
+				it.remove();
+				client.close();
+			}
+		}
+	}
+
+	@Override
+	public void registerClientSocket(IClientSocket socket) {
+		clientSockets.add(socket);
+	}
+
+	@Override
+	public void unRegisterClientSocket(IClientSocket socket) {
+		clientSockets.remove(socket);
 	}
 
 

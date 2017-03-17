@@ -16,13 +16,13 @@ import weight.KeyPress;
  */
 public class MainController implements IMainController, ISocketObserver, IWeightInterfaceObserver {
 
-	private ISocketController socketHandler;
+	private ISocketController socketController;
 	private IWeightInterfaceController weightController;
 	private KeyState keyState = KeyState.K1;
 	private DecimalFormat d;
 
-	public MainController(ISocketController socketHandler, IWeightInterfaceController weightInterfaceController) {
-		this.init(socketHandler, weightInterfaceController);
+	public MainController(ISocketController socketController, IWeightInterfaceController weightInterfaceController) {
+		this.init(socketController, weightInterfaceController);
         d = new DecimalFormat();
         DecimalFormatSymbols dec = new DecimalFormatSymbols();
         dec.setDecimalSeparator('.');
@@ -32,24 +32,23 @@ public class MainController implements IMainController, ISocketObserver, IWeight
 
 	@Override
 	public void init(ISocketController socketHandler, IWeightInterfaceController weightInterfaceController) {
-		this.socketHandler = socketHandler;
+		this.socketController = socketHandler;
 		this.weightController=weightInterfaceController;
 	}
 
 	@Override
 	public void start() {
-		if (socketHandler!=null && weightController!=null){
-			socketHandler.registerObserver(this);
+		if (socketController !=null && weightController!=null){
+			socketController.registerObserver(this);
 			weightController.registerObserver(this);
 			new Thread(weightController).start();
-			new Thread(socketHandler).start();
+			new Thread(socketController).start();
 		} else {
 			System.err.println("No controllers injected!");
 		}
 	}
 
 	//Listening for socket input
-    //TODO: Check KeyState!
 	@Override
 	public void notify(SocketInMessage message) {
 		switch (message.getType()) {
@@ -62,13 +61,11 @@ public class MainController implements IMainController, ISocketObserver, IWeight
 				weightController.showMessagePrimaryDisplay(message.getMessage());
 			}
 			if (keyState.equals(KeyState.K3) || keyState.equals(KeyState.K4)) {
-				socketHandler.sendMessage(new SocketOutMessage("D A"));
+				socketController.sendMessage(new SocketOutMessage("D A"));
 			}
 			break;
 		case Q:
-			if (keyState.equals(KeyState.K1) || keyState.equals(KeyState.K4)) {
-				closeConnections();
-			}
+			close();
 			break;
 		case RM208:
 			if (keyState.equals(KeyState.K1) || keyState.equals(KeyState.K4)) {
@@ -76,13 +73,13 @@ public class MainController implements IMainController, ISocketObserver, IWeight
 				weightController.setRM20_EXPECTING(true);
 			}
 			if (keyState.equals(KeyState.K3) || keyState.equals(KeyState.K4)) {
-				socketHandler.sendMessage(new SocketOutMessage("RM20 B"));
+				socketController.sendMessage(new SocketOutMessage("RM20 B"));
 			}
 			break;
 		case S:
 			if (keyState.equals(KeyState.K3) || keyState.equals(KeyState.K4)) {
 				String msg = "S S      "+d.format(weightController.getNettoWeight())+" kg";
-				socketHandler.sendMessage(new SocketOutMessage(msg));
+				socketController.sendMessage(new SocketOutMessage(msg));
 			}
 			break;
 		case T:
@@ -94,7 +91,7 @@ public class MainController implements IMainController, ISocketObserver, IWeight
 				updateWeight(weight);
 			}
 			if (keyState.equals(KeyState.K3) || keyState.equals(KeyState.K4)) {
-				socketHandler.sendMessage(new SocketOutMessage("DW A"));
+				socketController.sendMessage(new SocketOutMessage("DW A"));
 			}
 			break;
 		case K:
@@ -105,7 +102,7 @@ public class MainController implements IMainController, ISocketObserver, IWeight
 				weightController.showMessageSecondaryDisplay(message.getMessage());
 			}
 			if (keyState.equals(KeyState.K3) || keyState.equals(KeyState.K4)) {
-				socketHandler.sendMessage(new SocketOutMessage("P111 A"));
+				socketController.sendMessage(new SocketOutMessage("P111 A"));
 			}
 			break;
 		}
@@ -126,11 +123,11 @@ public class MainController implements IMainController, ISocketObserver, IWeight
 			this.keyState = KeyState.K4;
 			break;
 		default:
-			socketHandler.sendMessage(new SocketOutMessage("ES"));
+			socketController.sendMessage(new SocketOutMessage("ES"));
 			return;
 		}
 		if (keyState.equals(KeyState.K3) || keyState.equals(KeyState.K4)) {
-			socketHandler.sendMessage(new SocketOutMessage("K A"));
+			socketController.sendMessage(new SocketOutMessage("K A"));
 		}
 	}
 
@@ -157,26 +154,18 @@ public class MainController implements IMainController, ISocketObserver, IWeight
 		case C:
 			break;
 		case EXIT:
-			if (keyState.equals(KeyState.K1) || keyState.equals(KeyState.K4)) {
-				closeConnections();
-				System.exit(0);
-			}
-			if (keyState.equals(KeyState.K3) || keyState.equals(KeyState.K4)) {
-				socketHandler.sendMessage(new SocketOutMessage("Q"));
-			}
+			close();
 			break;
 		case SEND:
-			String msg = "RM20 A \"" + weightController.getRM20_MSG()+'\"';
-			if (keyState.equals(KeyState.K1) || keyState.equals(KeyState.K4)) {
-				if(weightController.isRM20_EXPECTING())
-                {
-                    weightController.setRM20_EXPECTING(false);
-                    weightController.showMessageSecondaryDisplay("");
-                }
-			}
-			if (keyState.equals(KeyState.K3) || keyState.equals(KeyState.K4)) {
-				socketHandler.sendMessage(new SocketOutMessage("K A 3"));
-				socketHandler.sendMessage(new SocketOutMessage(msg));
+			if(weightController.isRM20_EXPECTING()) {
+				if (keyState.equals(KeyState.K1) || keyState.equals(KeyState.K4)) {
+					weightController.setRM20_EXPECTING(false);
+					weightController.showMessageSecondaryDisplay("");
+				}
+				if (keyState.equals(KeyState.K3) || keyState.equals(KeyState.K4)) {
+					String msg = "RM20 A \"" + weightController.getRM20_MSG()+'\"';
+					socketController.sendMessage(new SocketOutMessage(msg));
+				}
 			}
 			break;
 		}
@@ -191,7 +180,7 @@ public class MainController implements IMainController, ISocketObserver, IWeight
 		}
 		if (keyState.equals(KeyState.K3) || keyState.equals(KeyState.K4)) {
 			String tMsg = "T S      "+d.format(weightController.getTaraWeight())+" kg";
-			socketHandler.sendMessage(new SocketOutMessage(tMsg));
+			socketController.sendMessage(new SocketOutMessage(tMsg));
 		}
 	}
 
@@ -204,13 +193,19 @@ public class MainController implements IMainController, ISocketObserver, IWeight
 			weightController.showMessagePrimaryDisplay(formattedWeight + " kg");
 		}
 		if (keyState.equals(KeyState.K3) || keyState.equals(KeyState.K4)) {
-			socketHandler.sendMessage(new SocketOutMessage("DB"));
+			socketController.sendMessage(new SocketOutMessage("DB"));
 		}
 	}
 
-	//TODO: Close all sockets (any streams?)
-	private void closeConnections() {
-
+	@Override
+	public void close() {
+		if (keyState.equals(KeyState.K3) || keyState.equals(KeyState.K4)) {
+			socketController.sendMessage(new SocketOutMessage("Q"));
+		}
+		if (keyState.equals(KeyState.K1) || keyState.equals(KeyState.K4)) {
+			socketController.closeAllClients();
+			System.exit(0);
+		}
 	}
 
 	@Override

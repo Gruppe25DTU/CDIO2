@@ -5,4 +5,5 @@ package socket;
  */
 public interface IClientSocket extends Runnable {
     void sendMessage(SocketOutMessage message);
+    void close();
 }
