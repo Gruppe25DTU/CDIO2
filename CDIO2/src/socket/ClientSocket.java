@@ -38,7 +38,24 @@ public class ClientSocket implements IClientSocket {
 		{
 			try {
 				inLine = inStream.readLine();
-			} catch (IOException e) {
+				if (Thread.currentThread().isInterrupted()) {
+					throw new InterruptedException();
+				}
+				if (inLine == null) break;
+				//Remove leading chars which are not a-zA-Z
+				while (inLine.length() > 0 && (inLine.charAt(0) < 65 || inLine.charAt(0) > 122)) {
+					inLine = inLine.substring(1);
+				}
+				System.out.println(inLine);
+				if (inLine.trim().equals("")) continue;
+				handleInput(inLine);
+				Thread.sleep(100);
+			}
+			catch (InterruptedException e) {
+				e.printStackTrace();
+				break;
+			}
+			catch (IOException e) {
 				if (inConn.isClosed()) {
 					//Connection closed while waiting for input
 					break;
@@ -52,21 +69,6 @@ public class ClientSocket implements IClientSocket {
 					break;
 				}
 			}
-			if (inLine==null) break;
-			//Remove leading chars which are not a-zA-Z
-			while (inLine.length() > 0 && (inLine.charAt(0) < 65 || inLine.charAt(0) > 122)) {
-				inLine = inLine.substring(1);
-			}
-			System.out.println(inLine);
-			if (inLine.trim().equals("")) continue;
-			handleInput(inLine);
-			try
-			{
-				Thread.currentThread().sleep(100);
-			}
-			catch (InterruptedException e) {
-				e.printStackTrace();
-			}
 		}
 		//Ensure proper closure
 		close();
@@ -76,7 +78,6 @@ public class ClientSocket implements IClientSocket {
 	{
 		try
 		{
-			//TODO: Validate input
 			switch (inLine.split(" ")[0])
 			{
 				case "RM20": // Display a message in the secondary display and wait for response
