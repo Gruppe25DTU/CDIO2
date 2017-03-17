@@ -12,8 +12,10 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.net.Socket;
 
+import static java.lang.Thread.MAX_PRIORITY;
 import static java.lang.Thread.sleep;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.fail;
 
 /**
@@ -66,6 +68,7 @@ public class SingleThreadTest {
         String pRequest = "\"Indtast nr\"";
         double pResponse = 755;
 
+        //RM208, Q, P111, K
 
     }
 
@@ -91,5 +94,75 @@ public class SingleThreadTest {
         assertEquals("Pre-Weight", "S S", response.substring(0, 3));
         assertEquals(weight, replyWeight, 0.001);
         assertEquals("Post-Weight", "kg", split[8]);
+    }
+
+    @Test
+    public void testT() {
+        double weight = Math.random() * 2;
+        weightController.setBruttoWeight(weight);
+        String weightStr = weight + "";
+        while (weightStr.length() < 5) {
+            weightStr += "0";
+        }
+        String expected = "T S      " + weightStr.substring(0, 5) + " kg";
+        client.notifyObservers(new SocketInMessage(SocketInMessage.SocketMessageType.T, ""));
+        assertEquals("Reponse after T:", expected, ClientSocket.output.trim());
+        assertEquals(weight, weightController.getTaraWeight(), 0.001);
+        assertEquals(0.0, weightController.getNettoWeight(), 0.0);
+    }
+
+    @Test
+    public void testD() {
+        try {
+            String msg = "Hello, World!";
+            //Ensure display shows something different from msg
+            client.notifyObservers(new SocketInMessage(SocketInMessage.SocketMessageType.B, "2.94"));
+            sleep(200);
+            String display = weightController.fxApp.txtload.getText().trim();
+            assertNotEquals("Display should NOT show Hello World", msg, display);
+            client.notifyObservers(new SocketInMessage(SocketInMessage.SocketMessageType.D, msg));
+            String response = ClientSocket.output;
+            assertEquals("Reply after D", "D A", response.trim());
+            sleep(200);
+            display = weightController.fxApp.txtload.getText().trim();
+            msg = msg.substring(0, 7).trim();
+            assertEquals("Display should now show " + msg, msg, display);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+    }
+
+    @Test
+    public void testDW() {
+        try {
+            double weight = Math.random() * 2;
+            String weightStr = weight + "";
+            while (weightStr.length() < 5) {
+                weightStr += "0";
+            }
+            weightStr = weightStr.substring(0, 5) + " kg";
+            weightController.setBruttoWeight(weight);
+            client.notifyObservers(new SocketInMessage(SocketInMessage.SocketMessageType.D, "HELLO"));
+            sleep(200);
+            String display = weightController.fxApp.txtload.getText().trim();
+            assertNotEquals("Should not should weight!", weightStr, display);
+            client.notifyObservers(new SocketInMessage(SocketInMessage.SocketMessageType.DW, ""));
+            String response = ClientSocket.output.trim();
+            sleep(200);
+            display = weightController.fxApp.txtload.getText().trim();
+            assertEquals("Should now show weight!", weightStr, display);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+    }
+
+    @Test
+    public void testP111() {
+
+    }
+
+    @Test
+    public void testRM20() {
+
     }
 }

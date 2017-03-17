@@ -21,7 +21,7 @@ import javafx.stage.WindowEvent;
 import weight.IWeightInterfaceController.InputType;
 
 public class FxApp extends Application {
-	private Text txtload, txtbottom;
+	public Text txtload, txtbottom;
 	private Text[] txtsft = new Text[6];
 	private Text[] txtinfo = new Text[4];
 	private TextField userInput;
