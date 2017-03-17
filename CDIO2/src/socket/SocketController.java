@@ -4,13 +4,14 @@ package socket;
 import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Set;
 
-public class SocketController implements ISocketController {
-	private Set<ISocketObserver> observers = new HashSet<>();
-	private Set<IClientSocket> clientSockets = new HashSet<>();
+public class SocketController implements ISocketController, IClientSocketController {
+	private Set<ISocketObserver> observers = Collections.synchronizedSet(new HashSet<>());
+	private Set<IClientSocket> clientSockets = Collections.synchronizedSet(new HashSet<>());
 
 	@Override
 	public void registerObserver(ISocketObserver observer) {
@@ -32,7 +33,7 @@ public class SocketController implements ISocketController {
 	@Override
 	public void run() {
 		try (ServerSocket listeningSocket = new ServerSocket(Port))
-		{ 
+		{
 			while (true)
 			{
 				Socket newSocket = listeningSocket.accept();
@@ -67,17 +68,6 @@ public class SocketController implements ISocketController {
 		}
 	}
 
-	@Override
-	public void registerClientSocket(IClientSocket socket) {
-		clientSockets.add(socket);
-	}
-
-	@Override
-	public void unRegisterClientSocket(IClientSocket socket) {
-		clientSockets.remove(socket);
-	}
-
-
 	private void notifyObservers(SocketInMessage message) {
 		for (ISocketObserver socketObserver : observers) {
 			socketObserver.notify(message);
@@ -87,6 +77,16 @@ public class SocketController implements ISocketController {
 	@Override
 	synchronized public void notify(SocketInMessage message) {
 		notifyObservers(message);
+	}
+
+	@Override
+	synchronized public void registerClientSocket(IClientSocket socket) {
+		clientSockets.add(socket);
+	}
+
+	@Override
+	synchronized public void unRegisterClientSocket(IClientSocket socket) {
+		clientSockets.remove(socket);
 	}
 }
 

@@ -7,8 +7,5 @@ public interface ISocketController extends Runnable{
 	void registerObserver(ISocketObserver observer);
 	void unRegisterObserver(ISocketObserver observer);
 	void sendMessage(SocketOutMessage message);
-	void registerClientSocket(IClientSocket socket);
-	void unRegisterClientSocket(IClientSocket socket);
-	void notify(SocketInMessage msg);
 
 }

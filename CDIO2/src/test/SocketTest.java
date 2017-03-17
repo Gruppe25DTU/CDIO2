@@ -14,6 +14,8 @@ import socket.SocketController;
 import weight.IWeightInterfaceController;
 import weight.gui.WeightInterfaceControllerGUI;
 
+import static java.lang.Thread.sleep;
+
 public class SocketTest{
 
 	public static void main(String[] args)
@@ -33,14 +35,15 @@ public class SocketTest{
 			Socket sock4 = new Socket("127.0.0.1",8000);
 			Scanner keyb = new Scanner(System.in);
 			new InStream(clientSock).start();
-			while(!clientSock.isClosed())
-			{
-				System.out.println("Is Connected: "+clientSock.isConnected());
-				out.writeBytes(keyb.nextLine()+'\r'+'\n');
-				
-			}
+			sleep(100);
+			sock2.getOutputStream().write("K 4\r\n".getBytes());
+			sock2.getOutputStream().flush();
+			sock2.getOutputStream().write("S\r\n".getBytes());
+			sock2.getOutputStream().flush();
 		} catch (IOException e) 
 		{
+			e.printStackTrace();
+		} catch (InterruptedException e) {
 			e.printStackTrace();
 		}
 

@@ -9,13 +9,13 @@ import socket.SocketInMessage.SocketMessageType;
 
 public class ClientSocket implements IClientSocket {
 
-	private ISocketController controller;
+	private IClientSocketController controller;
 	private Socket inConn;
 	private PrintWriter outStream;
 	private BufferedReader inStream;
 	private boolean active;
 
-	public ClientSocket(Socket inConn, ISocketController controller) {
+	public ClientSocket(Socket inConn, IClientSocketController controller) {
 		this.controller = controller;
 		this.inConn = inConn;
 		try 
