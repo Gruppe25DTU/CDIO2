@@ -13,7 +13,7 @@ public class ClientSocket implements IClientSocket {
 	private Socket inConn;
 	private PrintWriter outStream;
 	private BufferedReader inStream;
-	private boolean active;
+	public static String output;
 
 	public ClientSocket(Socket inConn, IClientSocketController controller) {
 		this.controller = controller;
@@ -22,7 +22,6 @@ public class ClientSocket implements IClientSocket {
 		{
 			outStream = new PrintWriter(inConn.getOutputStream(), true);
 			inStream = new BufferedReader(new InputStreamReader(inConn.getInputStream()));
-			active = false;
 		} 
 		catch (IOException e) 
 		{
@@ -125,8 +124,7 @@ public class ClientSocket implements IClientSocket {
 		}
 		catch(ArrayIndexOutOfBoundsException | StringIndexOutOfBoundsException | IllegalCommandException e)
 		{
-			outStream.write("ES\r\n");
-			outStream.flush();
+			sendMessage(new SocketOutMessage("ES\r\n"));
 		}
 
 	}
@@ -147,20 +145,15 @@ public class ClientSocket implements IClientSocket {
 		}
 	}
 
-	private void notifyObservers(SocketInMessage message) {
+	public void notifyObservers(SocketInMessage message) {
 		controller.notify(message);
-	}
-
-	public String toString()
-	{
-		String result = "ClientSocket active: "+active+" Socket: "+inConn;
-		return result;
 	}
 
 	@Override
 	public void sendMessage(SocketOutMessage message)
 	{
-		outStream.write(message.getMessage() + "\r\n");
+		output = message.getMessage() + "\r\n";
+		outStream.write(output);
 		outStream.flush();
 	}
 

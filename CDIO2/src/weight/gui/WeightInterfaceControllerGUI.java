@@ -10,7 +10,7 @@ import weight.KeyPress;
 public class WeightInterfaceControllerGUI implements IWeightInterfaceController {
 	private static WeightInterfaceControllerGUI instance;
 	private ArrayList<IWeightInterfaceObserver> observers = new ArrayList<IWeightInterfaceObserver>(); 
-	private FxApp fxApp;
+	public FxApp fxApp;
 
 	public double getBruttoWeight() {
 		return bruttoWeight;
@@ -106,23 +106,23 @@ public class WeightInterfaceControllerGUI implements IWeightInterfaceController 
 			o.notifyWeightChange(newValue / 1000);
 		}
 	}
-	void onExitButtonPressed() {
+	public void onExitButtonPressed() {
 		for (IWeightInterfaceObserver o : observers) {
 			o.notifyKeyPress(KeyPress.Exit());
 		}
 	}
-	void onZeroButtonPressed() {
+	public void onZeroButtonPressed() {
 		for (IWeightInterfaceObserver o : observers) {
 			o.notifyKeyPress(KeyPress.Zero());
 		}
 	}
-	void onTaraButtonPressed() {
+	public void onTaraButtonPressed() {
 		for (IWeightInterfaceObserver o : observers) {
 			o.notifyKeyPress(KeyPress.Tara());
 		}
 		
 	}
-	void onSendButtonPressed() {
+	public void onSendButtonPressed() {
 		for (IWeightInterfaceObserver o : observers) {
 			o.notifyKeyPress(KeyPress.Send());
 		}
