@@ -13,7 +13,6 @@ public class ClientSocket implements IClientSocket {
 	private Socket inConn;
 	private PrintWriter outStream;
 	private BufferedReader inStream;
-	public static String output;
 
 	public ClientSocket(Socket inConn, IClientSocketController controller) {
 		this.controller = controller;
@@ -153,8 +152,7 @@ public class ClientSocket implements IClientSocket {
 	@Override
 	public void sendMessage(SocketOutMessage message)
 	{
-		output = message.getMessage() + "\r\n";
-		outStream.write(output);
+		outStream.write(message.getMessage() + "\r\n");
 		outStream.flush();
 	}
 

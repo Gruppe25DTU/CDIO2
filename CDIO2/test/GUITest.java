@@ -1,42 +1,10 @@
-import controller.MainController;
-import org.junit.Before;
 import org.junit.Test;
-import socket.SocketController;
-import weight.gui.WeightInterfaceControllerGUI;
-
-import static java.lang.Thread.sleep;
 import static org.junit.Assert.assertEquals;
 
 /**
  * Created by ymuslu on 17-03-2017.
  */
-public class GUITest {
-
-    private static SocketController socketHandler;
-    private static WeightInterfaceControllerGUI weightController;
-    private static MainController mainCtrl;
-    private static boolean initiated = false;
-
-    @Before
-    public void init() {
-        if (initiated) {
-            return;
-        }
-        initiated = true;
-        socketHandler = new SocketController();
-        weightController = new WeightInterfaceControllerGUI();
-        //Injecting socket and uiController into mainController - Replace with improved versions...
-        mainCtrl = new MainController(socketHandler, weightController);
-        //.init and .start could be merged
-        mainCtrl.start();
-        while(weightController.fxApp == null) {
-            try {
-                sleep(100);
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            }
-        }
-    }
+public class GUITest extends WeightTest {
 
     @Test
     public void testSetWeight() {
