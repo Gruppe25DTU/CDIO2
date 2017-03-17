@@ -13,7 +13,26 @@ public class Main {
 	private static boolean gui= true;
 
 	public static void main(String[] args) {
-		ISocketController socketHandler = new SocketController();
+		int port = 8000; // default værdi
+		try
+		{
+			if(args.length>0)
+			{
+				port = Integer.parseInt(args[0]);
+				if(port < 1 || port > 65536)
+				{
+					System.out.println("Invalid port number: switching to default port: 8000");
+					port = 8000;
+				}
+			}
+			
+			
+		}
+		catch(NumberFormatException e)
+		{
+			//not a number
+		}
+		ISocketController socketHandler = new SocketController(port);
 		IWeightInterfaceController weightController = new WeightInterfaceControllerGUI();
 		//Injecting socket and uiController into mainController - Replace with improved versions...
 		IMainController mainCtrl = new MainController(socketHandler, weightController);

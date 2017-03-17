@@ -13,7 +13,14 @@ public class SocketController implements ISocketController, IClientSocketControl
 	private Set<ISocketObserver> observers = Collections.synchronizedSet(new HashSet<>());
 	private Set<IClientSocket> clientSockets = Collections.synchronizedSet(new HashSet<>());
 	public static String output;
+	private static int port = 8000;
 
+	
+	public SocketController(int port)
+	{
+		SocketController.port = port;
+	}
+	
 	@Override
 	public void registerObserver(ISocketObserver observer) {
 		observers.add(observer);
@@ -34,7 +41,7 @@ public class SocketController implements ISocketController, IClientSocketControl
 
 	@Override
 	public void run() {
-		try (ServerSocket listeningSocket = new ServerSocket(Port))
+		try (ServerSocket listeningSocket = new ServerSocket(port))
 		{
 			while (true)
 			{
