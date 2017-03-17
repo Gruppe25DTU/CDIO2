@@ -12,6 +12,7 @@ import java.util.Set;
 public class SocketController implements ISocketController, IClientSocketController {
 	private Set<ISocketObserver> observers = Collections.synchronizedSet(new HashSet<>());
 	private Set<IClientSocket> clientSockets = Collections.synchronizedSet(new HashSet<>());
+	public static String output;
 
 	@Override
 	public void registerObserver(ISocketObserver observer) {
@@ -25,6 +26,7 @@ public class SocketController implements ISocketController, IClientSocketControl
 
 	@Override
 	public void sendMessage(SocketOutMessage message) {
+		output = message.getMessage().trim();
 		for (IClientSocket socket : clientSockets) {
 			socket.sendMessage(message);
 		}

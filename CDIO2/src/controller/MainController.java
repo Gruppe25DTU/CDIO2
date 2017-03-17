@@ -142,9 +142,12 @@ public class MainController implements IMainController, ISocketObserver, IWeight
 			break;
 		case TEXT:
 			if (keyState.equals(KeyState.K1) || keyState.equals(KeyState.K4)) {
-				if(weightController.isRM20_EXPECTING() && weightController.getRM20_MSG().length()<31)
-                    weightController.setRM20_MSG(weightController.getRM20_MSG()+keyPress.getCharacter());
-				weightController.showMessageSecondaryDisplay(weightController.getRM20_MSG());
+				if (weightController.isRM20_EXPECTING()) {
+					if (weightController.getRM20_MSG().length() < 31) {
+						weightController.setRM20_MSG(weightController.getRM20_MSG() + keyPress.getCharacter());
+					}
+					weightController.showMessageSecondaryDisplay(weightController.getRM20_MSG());
+				}
 			}
 			break;
 		case ZERO:
@@ -158,13 +161,14 @@ public class MainController implements IMainController, ISocketObserver, IWeight
 			break;
 		case SEND:
 			if(weightController.isRM20_EXPECTING()) {
-				if (keyState.equals(KeyState.K1) || keyState.equals(KeyState.K4)) {
-					weightController.setRM20_EXPECTING(false);
-					weightController.showMessageSecondaryDisplay("");
-				}
 				if (keyState.equals(KeyState.K3) || keyState.equals(KeyState.K4)) {
 					String msg = "RM20 A \"" + weightController.getRM20_MSG()+'\"';
 					socketController.sendMessage(new SocketOutMessage(msg));
+				}
+				if (keyState.equals(KeyState.K1) || keyState.equals(KeyState.K4)) {
+					weightController.setRM20_EXPECTING(false);
+					weightController.setRM20_MSG("");
+					weightController.showMessageSecondaryDisplay("");
 				}
 			}
 			break;
