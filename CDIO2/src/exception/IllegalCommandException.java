@@ -1,3 +1,8 @@
 package exception;
 
-public class IllegalCommandException extends CDIOException {}
+public class IllegalCommandException extends CDIOException {
+
+	/**
+	 * 
+	 */
+	private static final long serialVersionUID = 1L;}

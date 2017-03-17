@@ -2,26 +2,26 @@ package socket;
 
 import java.io.*;
 import java.net.Socket;
-import java.util.ConcurrentModificationException;
 
 import exception.*;
 import socket.SocketInMessage.SocketMessageType;
 
 public class ClientSocket implements IClientSocket {
 
-	private IClientSocketController controller;
+	private ISocketController controller;
 	private Socket inConn;
 	private PrintWriter outStream;
 	private BufferedReader inStream;
-	public static String output;
+	private boolean active;
 
-	public ClientSocket(Socket inConn, IClientSocketController controller) {
+	public ClientSocket(Socket inConn, ISocketController controller) {
 		this.controller = controller;
 		this.inConn = inConn;
 		try 
 		{
 			outStream = new PrintWriter(inConn.getOutputStream(), true);
 			inStream = new BufferedReader(new InputStreamReader(inConn.getInputStream()));
+			active = false;
 		} 
 		catch (IOException e) 
 		{
@@ -32,60 +32,68 @@ public class ClientSocket implements IClientSocket {
 	@Override
 	public void run() 
 	{
-		String inLine = "";
-		while(!inConn.isClosed() && !inConn.isInputShutdown())
+		try
 		{
-			try {
+			String inLine = "";
+			while(!inConn.isClosed() && !inConn.isInputShutdown())
+			{
 				inLine = inStream.readLine();
-				if (Thread.currentThread().isInterrupted()) {
-					throw new InterruptedException();
-				}
-				if (inLine == null) break;
 				//Remove leading chars which are not a-zA-Z
-				while (inLine.length() > 0 && (inLine.charAt(0) < 65 || inLine.charAt(0) > 122)) {
+				while (inLine.charAt(0) < 65 || inLine.charAt(0) > 122) {
 					inLine = inLine.substring(1);
 				}
 				System.out.println(inLine);
+				if (inLine==null) break;
 				if (inLine.trim().equals("")) continue;
 				handleInput(inLine);
-				Thread.sleep(100);
-			}
-			catch (InterruptedException e) {
-				e.printStackTrace();
-				break;
-			}
-			catch (IOException e) {
-				if (inConn.isClosed()) {
-					//Connection closed while waiting for input
-					break;
+				try
+				{
+					Thread.currentThread().sleep(100);
 				}
-				e.printStackTrace();
-				//Try to reestablish the stream
-				try {
-					inStream = new BufferedReader(new InputStreamReader(inConn.getInputStream()));
-				} catch (IOException e1) {
-					e1.printStackTrace();
-					break;
+				catch (InterruptedException e) {
+					e.printStackTrace();
 				}
+
+			}
+			controller.unRegisterClientSocket(this);
+			inConn.close();
+		}
+		catch(IOException e)
+		{
+
+		}
+		finally {
+			controller.unRegisterClientSocket(this);
+			try {
+				inConn.close();
+			} catch (IOException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
 			}
 		}
-		//Ensure proper closure
-		close();
 	}
 
-	private void handleInput(String inLine)
+	public void handleInput(String inLine)
 	{
 		try
 		{
-			
+			//TODO: Validate input
 			switch (inLine.split(" ")[0])
 			{
 				case "RM20": // Display a message in the secondary display and wait for response
-					String[] rSplits = inLine.split("\"");
-					if (rSplits.length > 2 && rSplits[0].equals("RM20 8 ")){
-						String rMsg = rSplits[1];
+					String rMsg = "";
+					boolean correct = false;
+					if(inLine.charAt(7)!='\"')
+						throw new IllegalCommandException();
+					for(int i = 8; i<38;i++)
+						if(inLine.charAt(i)=='\"')
+						{
+							correct = true;
+							rMsg = inLine.substring(8,i);
+							break;
+						}
+					if(correct)
 						notifyObservers(new SocketInMessage(SocketMessageType.RM208,rMsg));
-					}
 					else
 						throw new IllegalCommandException();
 					break;
@@ -96,13 +104,9 @@ public class ClientSocket implements IClientSocket {
 					notifyObservers(new SocketInMessage(SocketMessageType.DW,""));
 					break;
 				case "P111": //Show something in secondary display
-					String[] pSplits = inLine.split("\"");
-					if (pSplits.length == 2 && pSplits[0].equals("P111 ")) {
-						String pMsg = pSplits[1];
-						notifyObservers(new SocketInMessage(SocketMessageType.P111,pMsg));
-						break;
-					}
-					throw new IllegalCommandException();
+					String pMsg = inLine.substring(5,inLine.length());
+					notifyObservers(new SocketInMessage(SocketMessageType.P111,pMsg));
+					break;
 				case "T": // Tare the weight
 					notifyObservers(new SocketInMessage(SocketMessageType.T,""));
 					break;
@@ -117,45 +121,66 @@ public class ClientSocket implements IClientSocket {
 					break;
 				case "Q": // Quit
 					notifyObservers(new SocketInMessage(SocketMessageType.Q,""));
-					close();
+					controller.unRegisterClientSocket(this);
+					inConn.close();
 					break;
 				default: //Something went wrong?
 					throw new IllegalCommandException();
 			}
 		}
+		catch(IOException e)
+		{
+
+		}
 		catch(ArrayIndexOutOfBoundsException | StringIndexOutOfBoundsException | IllegalCommandException e)
 		{
-			sendMessage(new SocketOutMessage("ES\r\n"));
+			outStream.write("ES\r\n");
+			outStream.flush();
 		}
 
 	}
 
-	public void close() {
-		try {
-			controller.unRegisterClientSocket(this);
-		} catch (ConcurrentModificationException e) {
-			e.printStackTrace();
-			//Something is iterating over client sockets and closing them
-			//Must be controller closing all sockets
-			//Controller is responsible for removing clients via its iterator
-		}
-		try {
-			inConn.close();
-		} catch (IOException e) {
-			e.printStackTrace();
-		}
-	}
-
-	public void notifyObservers(SocketInMessage message) {
+	private void notifyObservers(SocketInMessage message) {
 		controller.notify(message);
+	}
+
+	public Socket getInConn() {
+		return inConn;
+	}
+
+	public void setInConn(Socket inConn) {
+		this.inConn = inConn;
+	}
+
+	public boolean isActive() {
+		return active;
+	}
+
+	public void setActive(boolean active) {
+		this.active = active;
+	}
+
+	public String toString()
+	{
+		String result = "ClientSocket active: "+active+" Socket: "+inConn;
+		return result;
 	}
 
 	@Override
 	public void sendMessage(SocketOutMessage message)
 	{
-		output = message.getMessage() + "\r\n";
-		outStream.write(output);
+		outStream.write(message.getMessage() + "\r\n");
 		outStream.flush();
+	}
+
+	@Override
+	public void close() {
+		try {
+			inConn.close();
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+		
 	}
 
 }
