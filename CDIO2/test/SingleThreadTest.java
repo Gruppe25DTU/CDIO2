@@ -148,9 +148,10 @@ public class SingleThreadTest {
             assertNotEquals("Should not should weight!", weightStr, display);
             client.notifyObservers(new SocketInMessage(SocketInMessage.SocketMessageType.DW, ""));
             String response = ClientSocket.output.trim();
+            assertEquals("Reply after DW", "DW A", response);
             sleep(200);
-            display = weightController.fxApp.txtload.getText().trim();
-            assertEquals("Should now show weight!", weightStr, display);
+            double displayDouble = Double.valueOf(weightController.fxApp.txtload.getText().split(" ")[0].trim());
+            assertEquals(weight, displayDouble, 0.001);
         } catch (InterruptedException e) {
             e.printStackTrace();
         }
@@ -158,7 +159,19 @@ public class SingleThreadTest {
 
     @Test
     public void testP111() {
-
+        try {
+            String msg = "Hello, World!";
+            String display = weightController.fxApp.txtbottom.getText().trim();
+            assertNotEquals("Should not display Hello World", msg, display);
+            client.notifyObservers(new SocketInMessage(SocketInMessage.SocketMessageType.P111, msg));
+            String response = ClientSocket.output.trim();
+            assertEquals("Reply after P111", "P111 A", response);
+            sleep(200);
+            display = weightController.fxApp.txtbottom.getText().trim();
+            assertEquals("Should display Hello World!", msg, display);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
     }
 
     @Test
