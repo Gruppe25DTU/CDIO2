@@ -140,7 +140,7 @@ public class ClientSocket implements IClientSocket {
 
 	}
 
-	private void notifyObservers(SocketInMessage message) {
+	public void notifyObservers(SocketInMessage message) {
 		controller.notify(message);
 	}
 
